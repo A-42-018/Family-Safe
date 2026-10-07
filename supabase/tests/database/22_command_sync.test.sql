@@ -120,7 +120,7 @@ reset role;
 select is((select count(*)::int from public.device_commands where device_id = 'd0000000-0000-4000-8000-0000000000a4'), 1, 'so there is still exactly one command');
 select is((select count(*)::int from public.audit_logs where device_id = 'd0000000-0000-4000-8000-0000000000a4'), 1, 'and one audit row');
 insert into public.audit_logs (parent_id,device_id,action,metadata,created_at)
-  select 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','d0000000-0000-4000-8000-0000000000a5','DEVICE_COMMAND_SENT','{"command":"SYNC_CONFIG"}', now() - interval '9 minutes' * g from generate_series(1,6) g;
+  select 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid,'d0000000-0000-4000-8000-0000000000a5'::uuid,'DEVICE_COMMAND_SENT','{"command":"SYNC_CONFIG"}'::jsonb, now() - interval '9 minutes' * g from generate_series(1,6) g;
 set local role authenticated;
 select results_eq($$select o_outcome, o_command_id from public.parent_send_command('d0000000-0000-4000-8000-0000000000a5','SYNC_CONFIG')$$, $$values ('throttled'::text, null::uuid)$$, 'six sends in an hour are the limit');
 select results_eq($$select o_outcome from public.parent_send_command('d0000000-0000-4000-8000-0000000000b1','SYNC_CONFIG')$$, $$values ('not_found'::text)$$, 'another family''s device is not found');
