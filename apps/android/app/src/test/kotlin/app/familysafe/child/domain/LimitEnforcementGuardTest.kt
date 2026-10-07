@@ -61,8 +61,10 @@ class LimitEnforcementGuardTest {
         )
         limitLines.forEach { assertFalse(banned.containsMatchIn(it), it) }
         assertTrue(strings.contains("cannot lock the phone"))
-        // 18c: the screen-time check itself still reports nothing; only a blocked app being opened is reported
-        assertTrue(strings.contains("The screen-time limit check sends nothing to your parent"))
+        // 29d: checking sends nothing; the parent is told only that the limit was reached today, and when
+        assertTrue(strings.contains("Checking the screen-time limit sends nothing."))
+        assertTrue(strings.contains("When the limit is reached, your parent is told that it was reached"))
+        assertTrue(strings.contains("Nothing about which apps you used is sent for this"))
     }
 
     @Test

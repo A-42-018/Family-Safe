@@ -12,7 +12,8 @@ import java.time.ZoneId
 /**
  * One on-device limit check: read the cached rules, ask whether Usage Access is on, read today's local usage events
  * (only when a limit applies today and access is on), publish the result. Nothing is sent over the network and
- * nothing is stored; the result lives in [LimitStatusStore] for the screens. Blocking (one `queryEvents` call), so
+ * nothing is stored; the result lives in [LimitStatusStore] for the screens and is handed to [onStatus] (which may
+ * queue the one-line "limit reached" report, see `LimitReportRunner`). Blocking (one `queryEvents` call), so
  * callers run it off the main thread.
  */
 class LimitCheckRunner(
@@ -22,6 +23,7 @@ class LimitCheckRunner(
     private val status: LimitStatusStore,
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
+    private val onStatus: (LimitStatus) -> Unit = {},
 ) {
     fun check(): LimitStatus {
         val cached = rules()
@@ -34,6 +36,7 @@ class LimitCheckRunner(
             zone = zone(),
         )
         status.record(result)
+        onStatus(result)
         return result
     }
 }

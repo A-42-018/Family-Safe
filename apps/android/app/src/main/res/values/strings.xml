@@ -213,11 +213,12 @@
     <string name="limit_inactive_no_limit_today">There is no screen-time limit for today.</string>
     <string name="limit_inactive_no_usage_access">A limit is set for today, but Usage Access is off, so the app cannot measure your screen time. You can turn it on under Permissions.</string>
     <string name="limit_inactive_cannot_read">Android did not give the app your screen-time numbers just now. It tries again soon.</string>
-    <string name="limit_check_note">This check happens on this phone while the app is open. The screen-time limit check sends nothing to your parent. Checks of app rules work differently: when a blocked app is opened, your parent is told which app and when.</string>
+    <string name="limit_check_note">This check happens on this phone while the app is open. Checking the screen-time limit sends nothing. When the limit is reached, your parent is told that it was reached and at what time; nothing about which apps you used is sent for this. Checks of app rules work differently: when a blocked app is opened, your parent is told which app and when.</string>
     <string name="limit_reached_title">Daily limit reached</string>
     <string name="limit_reached_body">Your parent set a limit of %1$s for today. Your screen time today: %2$s.</string>
     <string name="limit_reached_body_none">Your parent set no screen time for today.</string>
     <string name="limit_reached_cannot_lock">This app cannot lock the phone or close other apps. It tells you about the limit; what you do next is up to you and your family.</string>
+    <string name="limit_reached_parent_told">Your parent is told that today\'s limit was reached, and at what time. Nothing about which apps you used is sent for this.</string>
     <string name="limit_reached_dismiss">OK, I understand</string>
     <string name="app_rules_header">App rules from your parent</string>
     <string name="app_rules_intro">Your parent can block an app or give it a daily limit. This app checks which apps you opened today, using Usage Access, about once a minute while it is open and when you come back to it.</string>

@@ -1,5 +1,5 @@
 begin;
-select plan(35);
+select plan(36);
 
 -- Fixture: parent A (devices A1, A2) and parent B (B1) -------------------------------------------------------------------
 insert into auth.users (id,email) values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','a@example.test'), ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','b@example.test');
@@ -79,7 +79,8 @@ select set_config('request.jwt.claim.sub', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
 set local role authenticated;
 select throws_ok($$select public.parent_set_notification_preference('EMERGENCY', false)$$, '22023', null, 'the preference RPC refuses to switch emergency off');
 select throws_ok($$select public.parent_set_notification_preference('SECURITY_EVENT', false)$$, '22023', null, 'the preference RPC refuses to switch security events off');
-select is((select public.parent_set_notification_preference('EMERGENCY', true)), 'unchanged', 'switching an always-on type on is a no-op');
+select is((select public.parent_set_notification_preference('EMERGENCY', true)), 'updated', 'switching an always-on type on clears a stale stored off');
+select is((select public.parent_set_notification_preference('EMERGENCY', true)), 'unchanged', 'and doing it again is a no-op');
 select is((select public.parent_set_notification_preference('GEOFENCE_ENTER', false)), 'updated', 'other types can still be switched off');
 reset role;
 

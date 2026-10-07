@@ -167,6 +167,19 @@ class WorkScheduler(private val context: Context) {
         workManager.enqueueUniqueWork(APP_ATTEMPTS_NOW_WORK, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
 
+    /** Uploads the pending "daily limit reached" report. APPEND_OR_REPLACE: a report queued during a run still gets its own. */
+    fun uploadLimitReportNow() {
+        val request = OneTimeWorkRequestBuilder<LimitReportWorker>()
+            .setConstraints(networkConstraints())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_MINUTES, TimeUnit.MINUTES)
+            .build()
+        workManager.enqueueUniqueWork(LIMIT_REPORT_NOW_WORK, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+    }
+
+    fun cancelLimitReport() {
+        workManager.cancelUniqueWork(LIMIT_REPORT_NOW_WORK)
+    }
+
     fun cancelAppAttempts() {
         workManager.cancelUniqueWork(APP_ATTEMPTS_NOW_WORK)
     }
@@ -216,6 +229,7 @@ class WorkScheduler(private val context: Context) {
         const val DEVICE_CONFIG_WORK = "device-config"
         const val DEVICE_CONFIG_NOW_WORK = "device-config-now"
         const val APP_ATTEMPTS_NOW_WORK = "app-attempts-now"
+        const val LIMIT_REPORT_NOW_WORK = "limit-report-now"
         const val SCHEDULE_BOUNDARY_WORK = "schedule-boundary"
         const val ENFORCEMENT_WORK = "enforcement"
         private const val ENFORCEMENT_MINUTES = 15L

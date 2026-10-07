@@ -35,6 +35,7 @@ fun LimitReachedScreen(evaluation: ScreenTimeEvaluation, onDismiss: () -> Unit) 
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(stringResource(R.string.limit_reached_cannot_lock), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.limit_reached_parent_told), style = MaterialTheme.typography.bodyMedium)
             Button(onClick = onDismiss) { Text(stringResource(R.string.limit_reached_dismiss)) }
         }
     }

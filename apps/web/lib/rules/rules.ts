@@ -183,7 +183,7 @@ export const UNCHANGED_MESSAGE = "No changes to save.";
 export const INACTIVE_MESSAGE = "This device is no longer active, so its rules can't be changed.";
 export const ENFORCEMENT_NOTE =
   "These are settings stored for this device. The child's app reads them on its next sync. From app version 0.17.1 it measures today's screen time on the phone and shows your child a notice when the daily limit is nearly reached and when it is reached, while the app is open. " +
-  "Android does not let this app lock the phone: the app only informs your child, it cannot close other apps, and it does not report a reached limit to you yet. Schedules are shown to your child the same way (see Schedules).";
+  "Android does not let this app lock the phone: the app only informs your child, it cannot close other apps, and when a daily limit is reached it tells you only that, with the time and no usage numbers (a notification you can switch off in Settings). Schedules are shown to your child the same way (see Schedules).";
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Dashboard "Active restrictions"

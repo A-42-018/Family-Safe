@@ -36,6 +36,8 @@ import app.familysafe.child.data.KeystoreKeyProvider
 import app.familysafe.child.data.KtorDeviceHttp
 import app.familysafe.child.data.KtorEnrollmentApi
 import app.familysafe.child.data.KtorRefreshApi
+import app.familysafe.child.data.LimitReportRepository
+import app.familysafe.child.data.LimitReportStore
 import app.familysafe.child.data.LimitStatusStore
 import app.familysafe.child.data.PermissionHistoryStore
 import app.familysafe.child.data.PermissionStateReader
@@ -60,6 +62,8 @@ import app.familysafe.child.domain.DeviceInfoPolicy
 import app.familysafe.child.domain.EnforcementInputs
 import app.familysafe.child.domain.HeartbeatPolicy
 import app.familysafe.child.domain.InstalledAppsSource
+import app.familysafe.child.domain.LimitReportPlanner
+import app.familysafe.child.domain.LimitStatus
 import app.familysafe.child.domain.ManagedEnforcer
 import app.familysafe.child.domain.PermissionSyncPolicy
 import app.familysafe.child.domain.ScheduleBoundary
@@ -75,6 +79,7 @@ import app.familysafe.child.work.DeviceInfoRunner
 import app.familysafe.child.work.EnforcementRunner
 import app.familysafe.child.work.HeartbeatRunner
 import app.familysafe.child.work.LimitCheckRunner
+import app.familysafe.child.work.LimitReportRunner
 import app.familysafe.child.work.PermissionSyncRunner
 import app.familysafe.child.work.ScheduleCheckRunner
 import app.familysafe.child.work.UsageRunner
@@ -211,7 +216,15 @@ class AppContainer(private val context: Context) {
             access = AndroidUsageAccessProbe(context),
             source = AndroidUsageStatsSource(context),
             status = limitStatusStore,
+            onStatus = { queueLimitReportIfNew(it) },
         )
+    }
+
+    /** The one-line "daily limit reached" report (day + time only): a sealed outbox, queued once per local day. */
+    val limitReportStore: LimitReportStore by lazy { LimitReportStore(secureStore) }
+
+    val limitReportRunner: LimitReportRunner by lazy {
+        LimitReportRunner(repository = LimitReportRepository(deviceHttp), store = limitReportStore)
     }
 
     /** App-rule check result; memory only, written only by [appRuleCheckRunner]. */
@@ -326,6 +339,8 @@ class AppContainer(private val context: Context) {
                         workScheduler.cancelUsage()
                         workScheduler.cancelDeviceConfig()
                         workScheduler.cancelAppAttempts()
+                        workScheduler.cancelLimitReport()
+                        limitReportStore.clear()
                         workScheduler.cancelScheduleBoundary()
                         workScheduler.cancelEnforcement()
                         enforcementRunner.releaseAll()
@@ -342,7 +357,10 @@ class AppContainer(private val context: Context) {
                 // A new, changed, re-confirmed or cleared rule set is measured against today's usage right away.
                 deviceConfigStore.cached.collect { cached ->
                     // Rules gone (new pairing or lost connection): another pairing's attempts must not be reported.
-                    if (cached == null) appAttemptStore.clear()
+                    if (cached == null) {
+                        appAttemptStore.clear()
+                        limitReportStore.clear()
+                    }
                     limitCheckRunner.check()
                     appRuleCheckRunner.check()
                     checkSchedules()
@@ -390,6 +408,17 @@ class AppContainer(private val context: Context) {
             null
         }
         if (delay == null) workScheduler.cancelScheduleBoundary() else workScheduler.scheduleBoundary(delay)
+    }
+
+    /**
+     * The check just saw the limit reached for a local day that was not reported yet: queue the one-line report (day + time,
+     * no minutes, no app). Only while enrolled and not disconnected; the server keeps one report per day.
+     */
+    private fun queueLimitReportIfNew(status: LimitStatus) {
+        if (!HeartbeatPolicy.shouldRun(appState.state.value)) return
+        val before = limitReportStore.snapshot()
+        val after = limitReportStore.update { LimitReportPlanner.queue(it, status, System.currentTimeMillis()) }
+        if (after.pending != null && after.pending != before.pending) workScheduler.uploadLimitReportNow()
     }
 
     /**
