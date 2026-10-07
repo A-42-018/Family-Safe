@@ -31,7 +31,7 @@ Schema per `prompt.md` §7–17, 39 + `pairing_tokens`, `device_credentials`. La
 
 ## Integrity rules enforced in the DB
 - New device → auto `device_rules` (everything OFF) + `device_permissions` (all NOT_REQUESTED).
-- `device_rules`: bedtime needs start≠end; `location_history_enabled` and `geofence_enabled` require `location_enabled`; screen limit 0–1440.
+- `device_rules`: `location_history_enabled` and `geofence_enabled` require `location_enabled`; screen limit 0–1440.
 - `geofence_events` FK is `(geofence_id, device_id)` → a geofence event can only reference a geofence of the same device. Radius 50–50 000 m; ≤100 geofences per device (Android limit).
 - `location_points`: lat/lon range, `unique(device_id, recorded_at)` (idempotent batches).
 - `app_rules`/`app_usage_daily`: `package_name` must match Android package format; unique per device (+ date).
@@ -135,3 +135,5 @@ Migration `20260930001800_schedules.sql` (SQL layer only; Edge + contracts = 19a
 - **`device_get_config(uuid)`** gains `o_timezone text` and `o_schedules jsonb` (enabled windows only, ordered by type, start, id, ≤ 20: `{id, name, type, days[asc], start_time "HH:MM", end_time "HH:MM"}`); `service_role` only.
 - **Helpers** (not callable by parents): `schedule_week_ranges`, `schedule_conflicts`, `is_valid_iana_timezone`; `is_timezone_name_format` is a CHECK helper (executable by `authenticated`/`service_role`).
 - **Tests:** `15_schedules.test.sql` (177 tests, **not executed here**); `05_rls` fixture schedules are now `enabled = false` (an enabled one queues a `SYNC_CONFIG` and broke the command counts); `01_schema` routine allow-list extended.
+
+> **19d-1:** `device_rules.bedtime_enabled/start/end` and `school_mode_enabled` (Phase 3) were dropped by `20261007000200_drop_legacy_schedule_columns.sql` (the version trigger, the audit field list and `device_get_config` stopped naming them first; `device_get_config` lost its four `o_bedtime_*`/`o_school_mode_enabled` outputs). Bedtime and school time are `schedules` rows of type BEDTIME / SCHOOL; nothing was converted because no schedule was ever derived from the old columns.

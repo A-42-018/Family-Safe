@@ -1,16 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  asRulesRow, bedtimeText, ENFORCEMENT_NOTE, FIELD, hasAnyLimit, parseMinutes, parseRulesForm, restrictionsHint, restrictionsValue,
-  RULES_FORM_KEYS, schoolModeText, summarizeRestrictions, toFormValues, versionText, weekPlan, WEEKDAYS, type RulesRow,
+  asRulesRow, ENFORCEMENT_NOTE, FIELD, hasAnyLimit, parseMinutes, parseRulesForm, restrictionsHint, restrictionsValue,
+  RULES_FORM_KEYS, summarizeRestrictions, toFormValues, versionText, weekPlan, WEEKDAYS, type RulesRow,
 } from "./rules";
 
 const DEV = "11111111-1111-4111-8111-111111111111";
 const row = (over: Partial<RulesRow> = {}): RulesRow => ({
-  configVersion: 1, dailyLimit: null, overrides: {}, bedtimeEnabled: false, bedtimeStart: null, bedtimeEnd: null, schoolModeEnabled: false, updatedAt: null, ...over,
+  configVersion: 1, dailyLimit: null, overrides: {}, updatedAt: null, ...over,
 });
 const raw = (over: Record<string, unknown> = {}) => ({
-  config_version: 3, daily_screen_limit_minutes: 120, daily_limit_overrides: { "6": 180 }, bedtime_enabled: true, bedtime_start: "21:30:00",
-  bedtime_end: "07:00:00", school_mode_enabled: false, updated_at: "2026-09-30T10:00:00Z", ...over,
+  config_version: 3, daily_screen_limit_minutes: 120, daily_limit_overrides: { "6": 180 }, updated_at: "2026-09-30T10:00:00Z", ...over,
 });
 /** A complete, valid submission: default off, every day "default". */
 const form = (over: Record<string, string> = {}): Record<string, string> => {
@@ -22,23 +21,22 @@ const form = (over: Record<string, string> = {}): Record<string, string> => {
 describe("asRulesRow", () => {
   it("reads a valid row and trims time-of-day to HH:MM", () => {
     expect(asRulesRow(raw())).toEqual({
-      configVersion: 3, dailyLimit: 120, overrides: { "6": 180 }, bedtimeEnabled: true, bedtimeStart: "21:30", bedtimeEnd: "07:00",
-      schoolModeEnabled: false, updatedAt: "2026-09-30T10:00:00Z",
+      configVersion: 3, dailyLimit: 120, overrides: { "6": 180 },
+      updatedAt: "2026-09-30T10:00:00Z",
     });
   });
   it("accepts a null limit, an empty override object and missing timestamps", () => {
-    expect(asRulesRow(raw({ daily_screen_limit_minutes: null, daily_limit_overrides: {}, updated_at: null, bedtime_enabled: false, bedtime_start: null, bedtime_end: null })))
-      .toMatchObject({ dailyLimit: null, overrides: {}, updatedAt: null, bedtimeStart: null });
+    expect(asRulesRow(raw({ daily_screen_limit_minutes: null, daily_limit_overrides: {}, updated_at: null })))
+      .toMatchObject({ dailyLimit: null, overrides: {}, updatedAt: null });
   });
   it("skips unusable rows instead of inventing values", () => {
     for (const bad of [
       null, "x", 5, [], raw({ config_version: 0 }), raw({ config_version: 1.5 }), raw({ config_version: "2" }), raw({ daily_screen_limit_minutes: 1441 }),
       raw({ daily_screen_limit_minutes: -1 }), raw({ daily_screen_limit_minutes: "60" }), raw({ daily_limit_overrides: { "8": 10 } }),
-      raw({ daily_limit_overrides: { "1": 1441 } }), raw({ daily_limit_overrides: null }), raw({ bedtime_enabled: "yes" }), raw({ school_mode_enabled: null }),
+      raw({ daily_limit_overrides: { "1": 1441 } }), raw({ daily_limit_overrides: null }),
     ]) expect(asRulesRow(bad)).toBeNull();
   });
   it("an unreadable time becomes null, not a guess", () => {
-    expect(asRulesRow(raw({ bedtime_start: "25:00:00" }))).toMatchObject({ bedtimeStart: null });
   });
 });
 
@@ -144,12 +142,6 @@ describe("display helpers", () => {
     expect(hasAnyLimit(row({ dailyLimit: 0 }))).toBe(true);
     expect(hasAnyLimit(row({ overrides: { "3": 0 } }))).toBe(true);
   });
-  it("bedtime and school mode text", () => {
-    expect(bedtimeText(row())).toBe("Off");
-    expect(bedtimeText(row({ bedtimeEnabled: true, bedtimeStart: "21:30", bedtimeEnd: "07:00" }))).toBe("On, 21:30 to 07:00");
-    expect(bedtimeText(row({ bedtimeEnabled: true }))).toBe("Off"); // never invent times
-    expect(schoolModeText(row({ schoolModeEnabled: true }))).toBe("On");
-  });
   it("versionText shows the version and, when usable, how long ago it changed", () => {
     const now = new Date("2026-09-30T10:05:00Z");
     expect(versionText({ configVersion: 3, updatedAt: "2026-09-30T10:00:00Z" }, now)).toBe("Settings version 3 · updated 5 minutes ago");
@@ -168,19 +160,19 @@ describe("display helpers", () => {
 
 describe("summarizeRestrictions", () => {
   const dev = (id: string, enrollmentStatus: "PENDING" | "ENROLLED" | "REVOKED" = "ENROLLED") => ({ id, enrollmentStatus });
-  it("counts enrolled devices with a limit, bedtime or school mode; revoked and pending are left out", () => {
+  it("counts enrolled devices with a limit; revoked and pending are left out", () => {
     const rules = new Map<string, RulesRow>([
       ["a", row({ dailyLimit: 60 })],
-      ["b", row({ bedtimeEnabled: true, bedtimeStart: "21:00", bedtimeEnd: "07:00" })],
-      ["c", row({ schoolModeEnabled: true, overrides: { "1": 30 } })],
+      ["b", row({ overrides: { "2": 45 } })],
+      ["c", row({ overrides: { "1": 30 } })],
       ["d", row()],
       ["r", row({ dailyLimit: 30 })],
       ["p", row({ dailyLimit: 30 })],
     ]);
     const s = summarizeRestrictions({ devices: [dev("a"), dev("b"), dev("c"), dev("d"), dev("r", "REVOKED"), dev("p", "PENDING")], rules });
-    expect(s).toEqual({ enrolled: 4, restricted: 3, limits: 2, bedtime: 1, school: 1, appRules: 0, schedules: 0, unknown: 0 });
+    expect(s).toEqual({ enrolled: 4, restricted: 3, limits: 3, appRules: 0, schedules: 0, unknown: 0 });
     expect(restrictionsValue(s)).toBe("3");
-    expect(restrictionsHint(s)).toBe("3 of 4 enrolled devices have a screen-time limit, bedtime, school mode, schedule or app restriction set. These are settings; the child's app can show a notice, but it can't lock a phone.");
+    expect(restrictionsHint(s)).toBe("3 of 4 enrolled devices have a screen-time limit, schedule or app restriction set. These are settings; the child's app can show a notice, but it can't lock a phone.");
   });
   it("an unreadable device is not counted as unrestricted", () => {
     const s = summarizeRestrictions({ devices: [dev("a"), dev("b")], rules: new Map([["a", row({ dailyLimit: 10 })]]) });
@@ -192,7 +184,7 @@ describe("summarizeRestrictions", () => {
     const rules = new Map<string, RulesRow>([["a", row()], ["b", row({ dailyLimit: 30 })]]);
     const s = summarizeRestrictions({ devices: [dev("a"), dev("b"), dev("c"), dev("d"), dev("r", "REVOKED")], rules, appRuleCounts: new Map([["a", 2], ["b", 1], ["c", 3], ["r", 5]]) });
     // a: app rules only · b: limit + app rules · c: rules unreadable but app rules known · d: nothing known
-    expect(s).toEqual({ enrolled: 4, restricted: 3, limits: 1, bedtime: 0, school: 0, appRules: 3, schedules: 0, unknown: 1 });
+    expect(s).toEqual({ enrolled: 4, restricted: 3, limits: 1, appRules: 3, schedules: 0, unknown: 1 });
     expect(restrictionsValue(s)).toBe("3");
     expect(restrictionsHint(s)).toContain("3 of 3 enrolled devices have");
     expect(restrictionsHint(s)).toContain("1 could not be read.");
@@ -201,7 +193,7 @@ describe("summarizeRestrictions", () => {
     const rules = new Map<string, RulesRow>([["a", row()], ["b", row({ dailyLimit: 30 })]]);
     const s = summarizeRestrictions({ devices: [dev("a"), dev("b"), dev("c"), dev("d"), dev("r", "REVOKED")], rules, scheduleCounts: new Map([["a", 1], ["b", 2], ["c", 1], ["r", 4]]) });
     // a: schedule only · b: limit + schedules · c: rules unreadable but a schedule is known · d: nothing known
-    expect(s).toEqual({ enrolled: 4, restricted: 3, limits: 1, bedtime: 0, school: 0, appRules: 0, schedules: 3, unknown: 1 });
+    expect(s).toEqual({ enrolled: 4, restricted: 3, limits: 1, appRules: 0, schedules: 3, unknown: 1 });
     expect(restrictionsValue(s)).toBe("3");
   });
   it("without appRuleCounts nothing changes (old callers)", () => {

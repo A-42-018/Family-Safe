@@ -30,8 +30,7 @@ begin
   values (v_device, v_child, 'Dev Pixel', 'Google', 'Pixel 8', '14', '0.1.0',
           'ONLINE', 'ENROLLED', 80, false, 'WIFI', now());
   -- device_rules / device_permissions rows are created by the on_device_created trigger
-  update public.device_rules set daily_screen_limit_minutes = 120, bedtime_enabled = true,
-         bedtime_start = '21:00', bedtime_end = '07:00' where device_id = v_device;
+  update public.device_rules set daily_screen_limit_minutes = 120 where device_id = v_device;
   insert into public.app_rules (device_id, package_name, app_name, blocked, daily_limit_minutes)
   values (v_device, 'com.google.android.youtube', 'YouTube', false, 30);
   insert into public.schedules (device_id, name, type, start_time, end_time, days)

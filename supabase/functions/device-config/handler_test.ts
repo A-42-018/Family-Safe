@@ -13,10 +13,6 @@ const CONFIG: DeviceConfigRow = {
   config_version: 3,
   daily_limit_minutes: 120,
   daily_limit_overrides: { "6": 240, "7": 0 },
-  bedtime_enabled: true,
-  bedtime_start: "21:00",
-  bedtime_end: "07:00",
-  school_mode_enabled: false,
   app_rules: [
     { package_name: "com.example.game", blocked: true, daily_limit_minutes: null },
     { package_name: "com.example.video", blocked: false, daily_limit_minutes: 45 },
@@ -124,13 +120,13 @@ Deno.test("device-config: nothing in the request can name a device", async () =>
   assertEquals(fake.reads, [DEVICE]);
 });
 
-Deno.test("device-config: disabled bedtime keeps null times; null limit and empty overrides pass through", async () => {
+Deno.test("device-config: a null limit and empty overrides pass through", async () => {
   const { fake, deps } = setup();
-  fake.result = { outcome: "ok", config: { ...CONFIG, daily_limit_minutes: null, daily_limit_overrides: {}, bedtime_enabled: false, bedtime_start: null, bedtime_end: null } };
+  fake.result = { outcome: "ok", config: { ...CONFIG, daily_limit_minutes: null, daily_limit_overrides: {} } };
   const { data } = await (await call(deps)).json();
   assertEquals(data.daily_limit_minutes, null);
   assertEquals(data.daily_limit_overrides, {});
-  assertEquals(data.bedtime_start, null);
+  assertEquals("bedtime_start" in data, false);
 });
 
 Deno.test("device-config: app_rules pass through unchanged (order, blocked, limit, null) and carry no label", async () => {

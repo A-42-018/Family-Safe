@@ -48,16 +48,19 @@ class DeviceConfigContractDriftTest {
         val contract = keysOf(schemaBody(ts, "deviceConfigSchema"))
         assertEquals(
             setOf(
-                "config_version", "daily_limit_minutes", "daily_limit_overrides", "bedtime_enabled", "bedtime_start",
-                "bedtime_end", "school_mode_enabled", "app_rules", "timezone", "schedules", "server_time",
+                "config_version",
+                "daily_limit_minutes",
+                "daily_limit_overrides",
+                "app_rules",
+                "timezone",
+                "schedules",
+                "server_time",
                 "next_interval_seconds",
             ),
             contract,
         )
-        // The legacy bedtime/school keys stay on the wire until Phase 19d-1; the app no longer reads them
-        // (ignoreUnknownKeys). Remove LEGACY in 19d-1 together with the contract keys.
-        val legacy = setOf("bedtime_enabled", "bedtime_start", "bedtime_end", "school_mode_enabled")
-        assertEquals(contract - legacy, serialNames("DeviceConfigDataDto"))
+        // 19d-1 removed the legacy bedtime/school keys from the wire; the DTO never reads them any more.
+        assertEquals(contract, serialNames("DeviceConfigDataDto"))
         val scheduleBody = ts.substring(ts.indexOf("export const scheduleSchema")).substringBefore(".strict()")
         for (key in serialNames("ScheduleDto")) assertTrue(Regex("""\b$key:""").containsMatchIn(scheduleBody), key)
         assertEquals(setOf("id", "name", "type", "days", "start_time", "end_time"), serialNames("ScheduleDto"))
@@ -67,11 +70,11 @@ class DeviceConfigContractDriftTest {
     fun `nullable fields are exactly the ones the contract allows to be null`() {
         val body = schemaBody(ts, "deviceConfigSchema")
         val nullable = Regex("""([a-z_]+):[^\n]*\.nullable\(\)""").findAll(body).map { it.groupValues[1] }.toSet()
-        assertEquals(setOf("daily_limit_minutes", "bedtime_start", "bedtime_end", "timezone"), nullable)
+        assertEquals(setOf("daily_limit_minutes", "timezone"), nullable)
         val dtoNullable = Regex(
             """val (\w+): (?:String|Int)\?""",
         ).findAll(dtoSource.substringAfter("class DeviceConfigDataDto")).count()
-        assertEquals(nullable.size - 2, dtoNullable) // the two legacy bedtime times are not read (until 19d-1)
+        assertEquals(nullable.size, dtoNullable)
     }
 
     @Test

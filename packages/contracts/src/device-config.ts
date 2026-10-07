@@ -201,10 +201,6 @@ export const deviceConfigSchema = z
     config_version: z.number().int().min(1),
     daily_limit_minutes: limitMinutes.nullable(),
     daily_limit_overrides: dayLimitOverridesSchema,
-    bedtime_enabled: z.boolean(),
-    bedtime_start: hhmm.nullable(),
-    bedtime_end: hhmm.nullable(),
-    school_mode_enabled: z.boolean(),
     app_rules: z.array(appRuleSchema).max(APP_RULES_MAX),
     /** IANA name, or `null` = the device's own time zone (Phase 19a). */
     timezone: timezoneSchema.nullable(),
@@ -215,11 +211,6 @@ export const deviceConfigSchema = z
   })
   .strict()
   .superRefine((c, ctx) => {
-    const both = c.bedtime_start !== null && c.bedtime_end !== null;
-    const none = c.bedtime_start === null && c.bedtime_end === null;
-    if (c.bedtime_enabled ? !both || c.bedtime_start === c.bedtime_end : !none) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["bedtime_start"], message: "bedtime times must match bedtime_enabled" });
-    }
     const seen = new Set<string>();
     for (const [i, rule] of c.app_rules.entries()) {
       if (seen.has(rule.package_name)) {

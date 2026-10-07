@@ -1,5 +1,5 @@
 // GET /functions/v1/device-config — the enrolled app pulls its current rules (daily limit + per-weekday overrides,
-// bedtime, school mode, app rules). Authenticated ONLY through `requireActiveDevice` (device JWT + live credential check on every
+// app rules, time zone, schedules). Authenticated ONLY through `requireActiveDevice` (device JWT + live credential check on every
 // request); the device id comes from the verified token and the request has no body and no parameters that name a device.
 // Conditional GET: the response carries `ETag: "v<config_version>"`; a matching `If-None-Match` gets 304 with no body.
 // Read-only: never changes `device_status`/`last_seen_at` (only the heartbeat is the liveness signal). A SYNC_CONFIG

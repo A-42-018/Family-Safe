@@ -1,5 +1,5 @@
 begin;
-select plan(31);
+select plan(30);
 
 -- fixtures ----------------------------------------------------------------
 insert into auth.users (id, email, raw_user_meta_data) values
@@ -20,7 +20,7 @@ select throws_ok($$insert into auth.users (id, email) values (gen_random_uuid(),
 -- device defaults + auto rows ---------------------------------------------
 select is((select count(*)::int from public.device_rules where device_id = 'd0000000-0000-4000-8000-000000000001'), 1, 'device_rules row auto-created');
 select is((select count(*)::int from public.device_permissions where device_id = 'd0000000-0000-4000-8000-000000000001'), 1, 'device_permissions row auto-created');
-select is((select location_enabled or geofence_enabled or location_history_enabled or bedtime_enabled or school_mode_enabled
+select is((select location_enabled or geofence_enabled or location_history_enabled 
              from public.device_rules where device_id = 'd0000000-0000-4000-8000-000000000001'), false, 'all monitoring OFF by default');
 select is((select camera_status from public.device_permissions where device_id = 'd0000000-0000-4000-8000-000000000001'), 'NOT_REQUESTED', 'permissions default NOT_REQUESTED');
 
@@ -30,7 +30,6 @@ select throws_ok($$update public.devices set enrollment_status = 'x' where id = 
 select throws_ok($$update public.devices set battery_level = 101 where id = 'd0000000-0000-4000-8000-000000000001'$$, '23514', null, 'battery_level range');
 select throws_ok($$update public.device_permissions set camera_status = 'MAYBE' where device_id = 'd0000000-0000-4000-8000-000000000001'$$, '23514', null, 'permission status enum');
 select throws_ok($$update public.device_rules set daily_screen_limit_minutes = 1441 where device_id = 'd0000000-0000-4000-8000-000000000001'$$, '23514', null, 'screen limit range');
-select throws_ok($$update public.device_rules set bedtime_enabled = true where device_id = 'd0000000-0000-4000-8000-000000000001'$$, '23514', null, 'bedtime requires start/end');
 select throws_ok($$update public.device_rules set location_history_enabled = true where device_id = 'd0000000-0000-4000-8000-000000000001'$$, '23514', null, 'history requires location_enabled');
 select throws_ok($$update public.device_rules set geofence_enabled = true where device_id = 'd0000000-0000-4000-8000-000000000001'$$, '23514', null, 'geofencing requires location_enabled');
 select throws_ok($$insert into public.app_rules (device_id, package_name, app_name) values ('d0000000-0000-4000-8000-000000000001','notapackage','X')$$, '23514', null, 'package_name format (single segment)');

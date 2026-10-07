@@ -28,10 +28,6 @@ export interface DeviceConfigRow {
   config_version: number;
   daily_limit_minutes: number | null;
   daily_limit_overrides: Record<string, number>;
-  bedtime_enabled: boolean;
-  bedtime_start: string | null;
-  bedtime_end: string | null;
-  school_mode_enabled: boolean;
   app_rules: AppRuleRow[];
   /** IANA name, or null = the device's own time zone. */
   timezone: string | null;

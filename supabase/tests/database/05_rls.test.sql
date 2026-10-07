@@ -131,7 +131,7 @@ select lives_ok($$insert into public.families (parent_id,name) values ('aaaaaaaa
 select lives_ok($$insert into public.children (family_id,name,date_of_birth) values ('f0000000-0000-4000-8000-00000000000a','Kid A2','2015-01-01')$$, 'A can add a child');
 select lives_ok($$update public.children set name='Renamed' where id='c0000000-0000-4000-8000-00000000000a'$$, 'A can rename own child');
 select lives_ok($$update public.devices set device_name='My tablet' where id='d0000000-0000-4000-8000-00000000000a'$$, 'A can rename own device');
-select lives_ok($$update public.device_rules set daily_screen_limit_minutes=90, bedtime_enabled=true, bedtime_start='21:00', bedtime_end='07:00' where device_id='d0000000-0000-4000-8000-00000000000a'$$, 'A can update own device_rules');
+select lives_ok($$update public.device_rules set daily_screen_limit_minutes=90 where device_id='d0000000-0000-4000-8000-00000000000a'$$, 'A can update own device_rules');
 select lives_ok($$update public.device_rules set location_enabled=true, geofence_enabled=true where device_id='d0000000-0000-4000-8000-00000000000a'$$, 'A can enable location + geofencing');
 select lives_ok($$insert into public.app_rules (device_id,package_name,app_name,blocked) values ('d0000000-0000-4000-8000-00000000000a','com.google.android.youtube','YouTube',true)$$, 'A can add an app rule');
 select lives_ok($$update public.app_rules set blocked=false, daily_limit_minutes=30 where device_id='d0000000-0000-4000-8000-00000000000a' and package_name='com.google.android.youtube'$$, 'A can update an app rule');

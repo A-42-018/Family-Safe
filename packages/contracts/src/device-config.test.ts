@@ -39,10 +39,6 @@ const CONFIG = {
   config_version: 3,
   daily_limit_minutes: 120,
   daily_limit_overrides: { "6": 240, "7": 0 },
-  bedtime_enabled: true,
-  bedtime_start: "21:00",
-  bedtime_end: "07:00",
-  school_mode_enabled: false,
   app_rules: [] as unknown[],
   timezone: null as string | null,
   schedules: [] as unknown[],
@@ -90,19 +86,15 @@ describe("screenTimeRulesInputSchema", () => {
 describe("deviceConfigSchema", () => {
   it("accepts a full config and a minimal one", () => {
     expect(deviceConfigSchema.safeParse(CONFIG).success).toBe(true);
-    expect(deviceConfigSchema.safeParse({ ...CONFIG, daily_limit_minutes: null, daily_limit_overrides: {}, bedtime_enabled: false, bedtime_start: null, bedtime_end: null }).success).toBe(true);
+    expect(deviceConfigSchema.safeParse({ ...CONFIG, daily_limit_minutes: null, daily_limit_overrides: {} }).success).toBe(true);
   });
-  it("bedtime times must match bedtime_enabled and differ", () => {
-    expect(deviceConfigSchema.safeParse({ ...CONFIG, bedtime_start: null }).success).toBe(false);
-    expect(deviceConfigSchema.safeParse({ ...CONFIG, bedtime_start: "07:00" }).success).toBe(false);
-    expect(deviceConfigSchema.safeParse({ ...CONFIG, bedtime_enabled: false }).success).toBe(false);
-    expect(deviceConfigSchema.safeParse({ ...CONFIG, bedtime_enabled: false, bedtime_start: null, bedtime_end: "07:00" }).success).toBe(false);
+  it("the legacy bedtime and school-mode keys are gone: they are extra keys now (strict)", () => {
+    for (const legacy of [{ bedtime_enabled: false }, { bedtime_start: null }, { bedtime_end: null }, { school_mode_enabled: false }]) {
+      expect(deviceConfigSchema.safeParse({ ...CONFIG, ...legacy }).success).toBe(false);
+    }
   });
   it("rejects malformed times, versions, extra keys and a wrong interval", () => {
     for (const bad of [
-      { ...CONFIG, bedtime_start: "24:00" },
-      { ...CONFIG, bedtime_start: "9:00" },
-      { ...CONFIG, bedtime_end: "07:60" },
       { ...CONFIG, config_version: 0 },
       { ...CONFIG, config_version: 1.5 },
       { ...CONFIG, device_id: DEVICE },
@@ -419,7 +411,6 @@ describe("SQL (migration 20260930001600_screen_time_rules.sql) agrees with the c
   it("wire keys map 1:1 to the SQL output columns", () => {
     const map: Record<string, string> = {
       config_version: "o_config_version", daily_limit_minutes: "o_daily_limit_minutes", daily_limit_overrides: "o_daily_limit_overrides",
-      bedtime_enabled: "o_bedtime_enabled", bedtime_start: "o_bedtime_start", bedtime_end: "o_bedtime_end", school_mode_enabled: "o_school_mode_enabled",
     };
     const wire = Object.keys(deviceConfigSchema._def.schema.shape).filter((k) => k !== "server_time" && k !== "next_interval_seconds" && k !== "app_rules" && k !== "timezone" && k !== "schedules");
     expect(wire.sort()).toEqual(Object.keys(map).sort()); // app_rules (18a) and timezone/schedules (19a) are checked against their own migrations below
@@ -500,5 +491,35 @@ describe("SQL (migration 20260930001600_screen_time_rules.sql) agrees with the c
     const rls = readFileSync(new URL("../../../supabase/migrations/20260929000800_rls_policies.sql", import.meta.url), "utf8");
     expect(rls).not.toContain("daily_limit_overrides");
     expect(rls).not.toContain("config_version");
+  });
+});
+
+describe("SQL (migration 20261007000200_drop_legacy_schedule_columns.sql) agrees with the contract", () => {
+  const sql = readFileSync(new URL("../../../supabase/migrations/20261007000200_drop_legacy_schedule_columns.sql", import.meta.url), "utf8");
+  const idx = readFileSync(new URL("../../../supabase/functions/device-config/index.ts", import.meta.url), "utf8");
+  const contract = readFileSync(new URL("./device-config.ts", import.meta.url), "utf8");
+  it("drops the four legacy columns after the functions stopped naming them", () => {
+    for (const col of ["bedtime_enabled", "bedtime_start", "bedtime_end", "school_mode_enabled"]) {
+      expect(sql).toContain(`drop column ${col}`);
+      expect(contract).not.toContain(col);
+      expect(idx).not.toContain(col);
+    }
+    expect(sql.indexOf("drop function public.device_get_config(uuid)")).toBeLessThan(sql.indexOf("drop column bedtime_enabled"));
+    expect(sql.indexOf("device_rules_config_changed()")).toBeLessThan(sql.indexOf("drop column bedtime_enabled"));
+  });
+  it("the recreated device_get_config returns exactly the wire keys, is read-only and service_role only", () => {
+    const fn = sql.slice(sql.indexOf("create function public.device_get_config"));
+    for (const col of ["o_config_version", "o_daily_limit_minutes", "o_daily_limit_overrides", "o_app_rules", "o_timezone", "o_schedules"]) {
+      expect(fn).toContain(col);
+    }
+    expect(fn).not.toMatch(/o_bedtime|o_school_mode/);
+    expect(fn).not.toMatch(/\b(update|insert|delete)\b\s/i);
+    expect(sql).toMatch(/grant execute on function public\.device_get_config\(uuid\) to service_role;/);
+    expect(sql).toMatch(/revoke all on function public\.device_get_config\(uuid\) from public, anon, authenticated;/);
+  });
+  it("the version tuple and the audit field list no longer contain the legacy columns", () => {
+    const triggers = sql.slice(sql.indexOf("create or replace function public.device_rules_bump_config_version"), sql.indexOf("drop function public.device_get_config"));
+    expect(triggers).not.toMatch(/bedtime|school_mode/);
+    expect(triggers).toContain("new.timezone, new.schedules_revision");
   });
 });

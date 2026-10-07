@@ -6,10 +6,9 @@ import org.junit.jupiter.api.Test
 
 class DeviceConfigHttpMapperTest {
     private val legacyKeys =
-        "\"bedtime_enabled\":false,\"bedtime_start\":null,\"bedtime_end\":null,\"school_mode_enabled\":false,"
+        "\"bedtime_enabled\":true,\"bedtime_start\":\"21:00\",\"bedtime_end\":\"21:00\",\"school_mode_enabled\":true,"
     private val body = """
         {"data":{"config_version":3,"daily_limit_minutes":120,"daily_limit_overrides":{"6":180},
-        "bedtime_enabled":false,"bedtime_start":null,"bedtime_end":null,"school_mode_enabled":false,
         "app_rules":[],"timezone":"Asia/Dhaka","schedules":[],"server_time":"2026-10-01T09:30:00.000Z","next_interval_seconds":21600}}
     """.trimIndent()
 
@@ -114,27 +113,14 @@ class DeviceConfigHttpMapperTest {
     }
 
     @Test
-    fun `the legacy bedtime and school keys are ignored, not read`() {
-        val changed = body.replace(
-            "\"bedtime_enabled\":false,\"bedtime_start\":null,\"bedtime_end\":null",
-            "\"bedtime_enabled\":true,\"bedtime_start\":\"21:00\",\"bedtime_end\":\"21:00\"",
-        )
-        assertInstanceOf(DeviceConfigResult.Fetched::class.java, map(200, changed))
-        assertInstanceOf(
-            DeviceConfigResult.Fetched::class.java,
-            map(
-                200,
-                body.replace(
-                    legacyKeys,
-                    "",
-                ),
-            ),
-        )
+    fun `old servers may still send the legacy bedtime and school keys and they are ignored`() {
+        val withLegacy = body.replace("\"app_rules\":[],", legacyKeys + "\"app_rules\":[],")
+        assertInstanceOf(DeviceConfigResult.Fetched::class.java, map(200, withLegacy))
     }
 
     @Test
     fun `an extra unknown key does not break reading`() {
-        val extra = body.replace("\"school_mode_enabled\":false,", "\"school_mode_enabled\":false,\"future\":1,")
+        val extra = body.replace("\"app_rules\":[],", "\"future\":1,\"app_rules\":[],")
         assertInstanceOf(DeviceConfigResult.Fetched::class.java, map(200, extra))
     }
 

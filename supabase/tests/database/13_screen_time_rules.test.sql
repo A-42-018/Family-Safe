@@ -1,5 +1,5 @@
 begin;
-select plan(95);
+select plan(94);
 
 -- Fixture: family A (A1 ENROLLED service-path, A2 REVOKED, A3 PENDING, A4 ENROLLED parent-path) and family B (B1 ENROLLED)
 insert into auth.users (id,email) values
@@ -57,12 +57,12 @@ update public.device_rules set config_version=99 where device_id='d0000000-0000-
 select is((select config_version from public.device_rules where device_id='d0000000-0000-4000-8000-0000000000b1'), 1, 'a caller cannot set config_version (the trigger keeps the stored value)');
 
 -- service path: every write is versioned, deduped and queued; no session = no audit row ---------------------------------
-update public.device_rules set daily_screen_limit_minutes=120, daily_limit_overrides='{"6":240,"7":0}', bedtime_enabled=true, bedtime_start='21:00', bedtime_end='07:00', school_mode_enabled=true where device_id='d0000000-0000-4000-8000-0000000000a1';
+update public.device_rules set daily_screen_limit_minutes=120, daily_limit_overrides='{"6":240,"7":0}' where device_id='d0000000-0000-4000-8000-0000000000a1';
 select is((select config_version from public.device_rules where device_id='d0000000-0000-4000-8000-0000000000a1'), 2, 'one multi-column update bumps the version once');
 select is((select count(*)::int from public.device_commands where device_id='d0000000-0000-4000-8000-0000000000a1' and command_type='SYNC_CONFIG' and status='PENDING'), 1, 'a change queues one PENDING SYNC_CONFIG');
 select results_eq($$select payload, expires_at = now() + interval '24 hours' from public.device_commands where device_id='d0000000-0000-4000-8000-0000000000a1' and command_type='SYNC_CONFIG'$$, $$values ('{}'::jsonb, true)$$, 'the command carries no rule values and expires in 24 h');
 select is((select count(*)::int from public.audit_logs), 0, 'a change without a parent session writes no audit row');
-update public.device_rules set daily_screen_limit_minutes=120, bedtime_enabled=true where device_id='d0000000-0000-4000-8000-0000000000a1';
+update public.device_rules set daily_screen_limit_minutes=120 where device_id='d0000000-0000-4000-8000-0000000000a1';
 select is((select config_version from public.device_rules where device_id='d0000000-0000-4000-8000-0000000000a1'), 2, 'a no-op update does not bump the version');
 update public.device_rules set daily_screen_limit_minutes=90 where device_id='d0000000-0000-4000-8000-0000000000a1';
 select is((select config_version from public.device_rules where device_id='d0000000-0000-4000-8000-0000000000a1'), 3, 'a real change bumps the version by one');
@@ -70,7 +70,7 @@ select is((select count(*)::int from public.device_commands where device_id='d00
 update public.device_rules set location_enabled=true where device_id='d0000000-0000-4000-8000-0000000000a1';
 select is((select config_version from public.device_rules where device_id='d0000000-0000-4000-8000-0000000000a1'), 3, 'a location toggle is not part of the config and does not bump the version');
 update public.device_rules set daily_screen_limit_minutes=120 where device_id='d0000000-0000-4000-8000-0000000000a1';
-update public.device_rules set school_mode_enabled=true where device_id='d0000000-0000-4000-8000-0000000000a2';
+update public.device_rules set daily_screen_limit_minutes=20 where device_id='d0000000-0000-4000-8000-0000000000a2';
 update public.device_rules set daily_screen_limit_minutes=30 where device_id='d0000000-0000-4000-8000-0000000000a2';
 select results_eq($$select config_version, (select count(*)::int from public.device_commands c where c.device_id=r.device_id) from public.device_rules r where r.device_id='d0000000-0000-4000-8000-0000000000a2'$$, $$values (3, 0)$$, 'a REVOKED device is versioned but never gets a command');
 update public.device_rules set daily_screen_limit_minutes=30 where device_id='d0000000-0000-4000-8000-0000000000a3';
@@ -78,19 +78,17 @@ select is((select count(*)::int from public.device_commands where device_id='d00
 
 -- device_get_config ------------------------------------------------------------------------------------------------------
 set local role service_role;
-select results_eq($$select o_outcome, o_config_version, o_daily_limit_minutes, o_daily_limit_overrides, o_bedtime_enabled, o_bedtime_start, o_bedtime_end, o_school_mode_enabled from public.device_get_config('d0000000-0000-4000-8000-0000000000a1')$$, $$values ('ok'::text, 4, 120, '{"6":240,"7":0}'::jsonb, true, '21:00'::text, '07:00'::text, true)$$, 'device_get_config returns the stored config with HH24:MI times');
+select results_eq($$select o_outcome, o_config_version, o_daily_limit_minutes, o_daily_limit_overrides from public.device_get_config('d0000000-0000-4000-8000-0000000000a1')$$, $$values ('ok'::text, 4, 120, '{"6":240,"7":0}'::jsonb)$$, 'device_get_config returns the stored config');
 reset role;
-update public.device_rules set bedtime_enabled=false where device_id='d0000000-0000-4000-8000-0000000000a1';
 set local role service_role;
-select results_eq($$select o_outcome, o_config_version, o_bedtime_enabled, o_bedtime_start, o_bedtime_end from public.device_get_config('d0000000-0000-4000-8000-0000000000a1')$$, $$values ('ok'::text, 5, false, null::text, null::text)$$, 'bedtime times are hidden while bedtime is disabled');
-select results_eq($$select o_outcome, o_config_version, o_daily_limit_minutes, o_daily_limit_overrides, o_bedtime_enabled, o_school_mode_enabled from public.device_get_config('d0000000-0000-4000-8000-0000000000b1')$$, $$values ('ok'::text, 1, null::int, '{}'::jsonb, false, false)$$, 'another device reads only its own defaults');
-select results_eq($$select o_outcome, o_config_version, o_daily_limit_minutes, o_daily_limit_overrides, o_bedtime_enabled, o_bedtime_start, o_bedtime_end, o_school_mode_enabled from public.device_get_config('d0000000-0000-4000-8000-0000000000a2')$$, $$values ('inactive'::text, 0, null::int, '{}'::jsonb, false, null::text, null::text, false)$$, 'REVOKED device -> inactive, no rule data');
+select results_eq($$select o_outcome, o_config_version, o_daily_limit_minutes, o_daily_limit_overrides from public.device_get_config('d0000000-0000-4000-8000-0000000000b1')$$, $$values ('ok'::text, 1, null::int, '{}'::jsonb)$$, 'another device reads only its own defaults');
+select results_eq($$select o_outcome, o_config_version, o_daily_limit_minutes, o_daily_limit_overrides from public.device_get_config('d0000000-0000-4000-8000-0000000000a2')$$, $$values ('inactive'::text, 0, null::int, '{}'::jsonb)$$, 'REVOKED device -> inactive, no rule data');
 select results_eq($$select o_outcome, o_config_version from public.device_get_config('d0000000-0000-4000-8000-0000000000a3')$$, $$values ('inactive'::text, 0)$$, 'PENDING device -> inactive');
 select results_eq($$select o_outcome, o_config_version from public.device_get_config('d0000000-0000-4000-8000-00000000ffff')$$, $$values ('inactive'::text, 0)$$, 'unknown device -> inactive');
 select throws_ok($$select * from public.device_get_config(null)$$, '22023', null, 'a NULL device id is rejected');
 select results_eq($$select o_app_rules from public.device_get_config('d0000000-0000-4000-8000-0000000000a1')$$, $$values ('[]'::jsonb)$$, 'a device without app rules gets an empty o_app_rules (Phase 18a column)');
 reset role;
-select is((select config_version from public.device_rules where device_id='d0000000-0000-4000-8000-0000000000a1'), 5, 'reading the config never changes the version');
+select is((select config_version from public.device_rules where device_id='d0000000-0000-4000-8000-0000000000a1'), 4, 'reading the config never changes the version');
 
 -- parent path: parent_set_screen_time_rules on A4 ----------------------------------------------------------------------------
 select set_config('request.jwt.claim.sub', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', true);
@@ -162,16 +160,16 @@ select is((select config_version from public.device_rules where device_id='d0000
 -- direct column grants stay versioned (PostgREST path) ------------------------------------------------------------------------------------
 select set_config('request.jwt.claim.sub', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', true);
 set local role authenticated;
-select lives_ok($$update public.device_rules set bedtime_enabled=true, bedtime_start='21:00', bedtime_end='07:00' where device_id='d0000000-0000-4000-8000-0000000000a4'$$, 'parent can still update bedtime directly');
+select lives_ok($$update public.device_rules set daily_screen_limit_minutes=77 where device_id='d0000000-0000-4000-8000-0000000000a4'$$, 'parent can still update the daily limit directly');
 select throws_ok($$update public.device_rules set daily_limit_overrides='{"1":5}' where device_id='d0000000-0000-4000-8000-0000000000a4'$$, '42501', null, 'parent cannot write overrides directly');
 select throws_ok($$update public.device_rules set config_version=99 where device_id='d0000000-0000-4000-8000-0000000000a4'$$, '42501', null, 'parent cannot write config_version');
 reset role;
-select is((select config_version from public.device_rules where device_id='d0000000-0000-4000-8000-0000000000a4'), 6, 'a direct bedtime change bumps the version once');
-select is((select count(*)::int from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4' and metadata -> 'fields' = '["bedtime_enabled","bedtime_start","bedtime_end"]'::jsonb), 1, 'the direct change is audited as RULE_CHANGED with its field names');
+select is((select config_version from public.device_rules where device_id='d0000000-0000-4000-8000-0000000000a4'), 6, 'a direct limit change bumps the version once');
+select is((select count(*)::int from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4' and metadata -> 'fields' = '["daily_screen_limit_minutes"]'::jsonb), 2, 'the direct change is audited as RULE_CHANGED with its field name (one earlier limit-only change plus this one)');
 select is((select count(*)::int from public.device_commands where device_id='d0000000-0000-4000-8000-0000000000a4' and command_type='SYNC_CONFIG' and status='PENDING'), 1, 'the direct change keeps one PENDING SYNC_CONFIG');
 set local role authenticated;
 update public.device_rules set location_enabled=true where device_id='d0000000-0000-4000-8000-0000000000a4';
-update public.device_rules set bedtime_enabled=true where device_id='d0000000-0000-4000-8000-0000000000a4';
+update public.device_rules set daily_screen_limit_minutes=77 where device_id='d0000000-0000-4000-8000-0000000000a4';
 reset role;
 select results_eq($$select config_version, (select count(*)::int from public.audit_logs a where a.device_id=r.device_id) from public.device_rules r where r.device_id='d0000000-0000-4000-8000-0000000000a4'$$, $$values (6, 5)$$, 'a location toggle and a no-op update: no bump, no audit row');
 

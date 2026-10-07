@@ -14,7 +14,7 @@ function fake(res: Res) {
   const from = vi.fn((_t: string) => b);
   return { supabase: { from } as unknown as SupabaseClient, from, calls };
 }
-const ROW = { config_version: 2, daily_screen_limit_minutes: 90, daily_limit_overrides: {}, bedtime_enabled: false, bedtime_start: null, bedtime_end: null, school_mode_enabled: false, updated_at: null };
+const ROW = { config_version: 2, daily_screen_limit_minutes: 90, daily_limit_overrides: {}, updated_at: null };
 const D1 = "11111111-1111-4111-8111-111111111111";
 const D2 = "22222222-2222-4222-8222-222222222222";
 const D3 = "33333333-3333-4333-8333-333333333333";

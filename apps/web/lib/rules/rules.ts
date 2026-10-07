@@ -16,7 +16,7 @@ import { formatLastSeen } from "@/lib/enrollment/format";
 
 /** Columns read from `device_rules` (parents have SELECT; `config_version`/overrides are readable, never writable directly). */
 export const RULES_COLUMNS =
-  "config_version,daily_screen_limit_minutes,daily_limit_overrides,bedtime_enabled,bedtime_start,bedtime_end,school_mode_enabled,updated_at";
+  "config_version,daily_screen_limit_minutes,daily_limit_overrides,updated_at";
 
 export interface RulesRow {
   configVersion: number;
@@ -24,15 +24,10 @@ export interface RulesRow {
   dailyLimit: number | null;
   /** ISO weekday -> minutes; a present key replaces the default for that weekday (0 = no screen time). */
   overrides: DayLimitOverrides;
-  bedtimeEnabled: boolean;
-  bedtimeStart: string | null;
-  bedtimeEnd: string | null;
-  schoolModeEnabled: boolean;
   updatedAt: string | null;
 }
 
 const isInt = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v);
-const hhmm = (v: unknown): string | null => (typeof v === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]/.test(v) ? v.slice(0, 5) : null);
 
 /** A raw `device_rules` row → `RulesRow`; anything unusable → null (skipped, never invented). */
 export function asRulesRow(raw: unknown): RulesRow | null {
@@ -43,15 +38,10 @@ export function asRulesRow(raw: unknown): RulesRow | null {
   if (limit !== null && !(isInt(limit) && limit >= 0 && limit <= DAILY_LIMIT_MAX_MINUTES)) return null;
   const overrides = dayLimitOverridesSchema.safeParse(r.daily_limit_overrides);
   if (!overrides.success) return null;
-  if (typeof r.bedtime_enabled !== "boolean" || typeof r.school_mode_enabled !== "boolean") return null;
   return {
     configVersion: r.config_version,
     dailyLimit: limit,
     overrides: overrides.data,
-    bedtimeEnabled: r.bedtime_enabled,
-    bedtimeStart: hhmm(r.bedtime_start),
-    bedtimeEnd: hhmm(r.bedtime_end),
-    schoolModeEnabled: r.school_mode_enabled,
     updatedAt: typeof r.updated_at === "string" ? r.updated_at : null,
   };
 }
@@ -181,11 +171,6 @@ export function weekPlan(rules: { dailyLimit: number | null; overrides: DayLimit
 
 export const hasAnyLimit = (r: Pick<RulesRow, "dailyLimit" | "overrides">): boolean => r.dailyLimit !== null || Object.keys(r.overrides).length > 0;
 
-export function bedtimeText(r: Pick<RulesRow, "bedtimeEnabled" | "bedtimeStart" | "bedtimeEnd">): string {
-  return r.bedtimeEnabled && r.bedtimeStart && r.bedtimeEnd ? `On, ${r.bedtimeStart} to ${r.bedtimeEnd}` : "Off";
-}
-export const schoolModeText = (r: Pick<RulesRow, "schoolModeEnabled">): string => (r.schoolModeEnabled ? "On" : "Off");
-
 /** "Settings version 3 · updated 5 minutes ago"; the time part is left out when the timestamp is missing or unusable. */
 export function versionText(r: Pick<RulesRow, "configVersion" | "updatedAt">, now: Date = new Date()): string {
   const base = `Settings version ${r.configVersion}`;
@@ -219,11 +204,9 @@ export interface RestrictionsInput {
 }
 export interface RestrictionsSummary {
   enrolled: number;
-  /** Enrolled devices with a screen-time limit, bedtime, school mode, schedule or app rule set. */
+  /** Enrolled devices with a screen-time limit, schedule or app rule set. */
   restricted: number;
   limits: number;
-  bedtime: number;
-  school: number;
   /** Enrolled devices with at least one blocked or limited app. */
   appRules: number;
   /** Enrolled devices with at least one enabled schedule (Phase 19b). */
@@ -233,7 +216,7 @@ export interface RestrictionsSummary {
 }
 
 export function summarizeRestrictions(input: RestrictionsInput): RestrictionsSummary {
-  const s: RestrictionsSummary = { enrolled: 0, restricted: 0, limits: 0, bedtime: 0, school: 0, appRules: 0, schedules: 0, unknown: 0 };
+  const s: RestrictionsSummary = { enrolled: 0, restricted: 0, limits: 0, appRules: 0, schedules: 0, unknown: 0 };
   for (const d of input.devices) {
     if (d.enrollmentStatus !== "ENROLLED") continue; // revoked / pending devices carry no active rules
     s.enrolled++;
@@ -250,11 +233,9 @@ export function summarizeRestrictions(input: RestrictionsInput): RestrictionsSum
     }
     const limit = hasAnyLimit(r);
     if (limit) s.limits++;
-    if (r.bedtimeEnabled) s.bedtime++;
-    if (r.schoolModeEnabled) s.school++;
     if (apps) s.appRules++;
     if (scheduled) s.schedules++;
-    if (limit || r.bedtimeEnabled || r.schoolModeEnabled || apps || scheduled) s.restricted++;
+    if (limit || apps || scheduled) s.restricted++;
   }
   return s;
 }
@@ -270,7 +251,7 @@ export function restrictionsHint(s: RestrictionsSummary): string {
   if (s.enrolled === 0) return "Limits you set on an enrolled device appear here.";
   const known = s.enrolled - s.unknown;
   if (known === 0) return "The rules of your enrolled devices could not be read.";
-  const parts = [`${s.restricted} of ${known} enrolled ${devices(known)} ${s.restricted === 1 ? "has" : "have"} a screen-time limit, bedtime, school mode, schedule or app restriction set.`];
+  const parts = [`${s.restricted} of ${known} enrolled ${devices(known)} ${s.restricted === 1 ? "has" : "have"} a screen-time limit, schedule or app restriction set.`];
   if (s.unknown > 0) parts.push(`${s.unknown} could not be read.`);
   parts.push("These are settings; the child's app can show a notice, but it can't lock a phone.");
   return parts.join(" ");
