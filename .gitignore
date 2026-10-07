@@ -21,3 +21,4 @@ apps/android/**/google-services.json
 # Supabase
 supabase/.branches/
 supabase/.temp/
+*.tsbuildinfo

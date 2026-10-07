@@ -634,3 +634,30 @@ describe("Phase 20c-1 activity page", () => {
     expect(src("lib/activity/activity.ts")).not.toMatch(/JSON\.stringify/);
   });
 });
+
+describe("Phase 30b audit-log page", () => {
+  const src = (p: string) => read(`${root}${p}`);
+  const page = src("app/(app)/audit-logs/page.tsx");
+
+  it("the page parses its filters, renders the list and holds no data-access code of its own", () => {
+    expect(page).toContain("parseAuditFilters(");
+    expect(page).toContain("<AuditList");
+    expect(page).toMatch(/metadata[^=]*=\s*\{\s*title:/);
+    expect(page).not.toMatch(/supabase|fetch\(|localStorage|sessionStorage|console\.|dangerouslySetInnerHTML/i);
+  });
+  it("the read side only calls the list RPC and the card is a plain GET form with no write controls", () => {
+    const queries = src("lib/audit/queries.ts");
+    expect(queries).toContain('rpc("parent_list_audit_logs"');
+    expect(queries).not.toMatch(/\.(insert|update|upsert|delete)\(|\.from\(/);
+    expect(queries).not.toMatch(/console\./);
+    const card = src("components/audit/audit-list.tsx");
+    expect(card).toContain('data-testid="audit-card"');
+    expect(card).toContain('method="get"');
+    expect(card).not.toMatch(/"use client"|method="post"|action=\{|onClick|dangerouslySetInnerHTML|supabase/i);
+  });
+  it("raw metadata is never rendered and the IP is shown for sign-ins only", () => {
+    expect(src("components/audit/audit-list.tsx")).not.toMatch(/metadata/);
+    expect(src("lib/audit/audit.ts")).not.toMatch(/JSON\.stringify/);
+    expect(src("lib/audit/audit.ts")).toMatch(/ip: row\.action === "LOGIN" \? row\.ip : null/);
+  });
+});

@@ -25,7 +25,7 @@ select is(
 select is(
   (select count(*)::int from information_schema.routine_privileges
     where routine_schema = 'public' and grantee in ('anon','authenticated','PUBLIC')
-      and routine_name not in ('is_valid_day_set','is_valid_day_limits','parent_set_screen_time_rules','parent_set_app_rule','parent_save_schedule','parent_delete_schedule','parent_set_device_timezone','is_timezone_name_format','owns_family','owns_child','owns_device')
+      and routine_name not in ('is_valid_day_set','is_valid_day_limits','parent_set_screen_time_rules','parent_set_app_rule','parent_save_schedule','parent_delete_schedule','parent_set_device_timezone','parent_list_audit_logs','is_timezone_name_format','owns_family','owns_child','owns_device')
       ),
   0, 'anon/authenticated/PUBLIC cannot execute public functions (except CHECK helpers, owns_* helpers, parent RPCs)');
 select is(
