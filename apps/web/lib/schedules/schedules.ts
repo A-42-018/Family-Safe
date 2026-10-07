@@ -323,5 +323,5 @@ export const TIMEZONE_UNKNOWN_MESSAGE = "That time zone isn't available. Choose 
 export const OVERNIGHT_NOTE = "A schedule that ends earlier than it starts runs overnight and belongs to the day it starts on.";
 export const TYPES_NOTE = "Schedules of the same type can't be on at the same time. Different types may overlap.";
 export const SCHEDULES_NOTE =
-  "Schedules are settings stored for this device, with times read in the time zone above. The child's app does not apply schedules yet, so nothing changes on the phone when a schedule starts or ends. " +
-  "Android does not let this app lock the phone: when schedules are applied, the app will be able to tell your child that a quiet time has started, not close other apps.";
+  "Schedules are settings stored for this device, with times read in the time zone above. From app version 0.19.0 the child's app reads them on its next sync and, while it is open, tells your child when a schedule starts. " +
+  "Android does not let this app lock the phone: the app only informs your child, it cannot close other apps, and it does not report a schedule to you.";

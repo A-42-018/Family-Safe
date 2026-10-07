@@ -9,6 +9,7 @@ import app.familysafe.child.domain.DeviceAuthState
 import app.familysafe.child.domain.DeviceInfoReport
 import app.familysafe.child.domain.LimitStatus
 import app.familysafe.child.domain.PermissionSnapshot
+import app.familysafe.child.domain.ScheduleStatus
 import app.familysafe.child.domain.SyncStatus
 import app.familysafe.child.domain.UsageAccess
 import app.familysafe.child.domain.UsageReport
@@ -40,12 +41,18 @@ class AppStateHolder(
     screenTime: StateFlow<CachedScreenTimeConfig?> = MutableStateFlow(null),
     limit: StateFlow<LimitStatus> = MutableStateFlow(LimitStatus.Unchecked),
     appRules: StateFlow<AppRuleStatus> = MutableStateFlow(AppRuleStatus.Unchecked),
+    schedules: StateFlow<ScheduleStatus> = MutableStateFlow(ScheduleStatus.Unchecked),
 ) {
     private val enrollmentVersion = MutableStateFlow(0)
 
     // `combine` has typed overloads for five flows only: the "what was shared" reports, the Usage Access state and
     // the rules group (cached rules + today's limit check) travel as one group.
-    private class Rules(val cached: CachedScreenTimeConfig?, val limit: LimitStatus, val appRules: AppRuleStatus)
+    private class Rules(
+        val cached: CachedScreenTimeConfig?,
+        val limit: LimitStatus,
+        val appRules: AppRuleStatus,
+        val schedules: ScheduleStatus,
+    )
 
     private class Shared(
         val info: DeviceInfoReport?,
@@ -56,7 +63,9 @@ class AppStateHolder(
     )
 
     private val rulesGroup =
-        combine(screenTime, limit, appRules) { cached, status, apps -> Rules(cached, status, apps) }
+        combine(screenTime, limit, appRules, schedules) { cached, status, apps, sched ->
+            Rules(cached, status, apps, sched)
+        }
 
     private val shared = combine(deviceInfo, appInventory, usage, usageAccess, rulesGroup) { a, b, c, d, e ->
         Shared(a, b, c, d, e)
@@ -82,6 +91,7 @@ class AppStateHolder(
             screenTime = reports.rules.cached,
             limit = reports.rules.limit,
             appRules = reports.rules.appRules,
+            schedules = reports.rules.schedules,
         )
     }.stateIn(
         scope = scope,
@@ -99,6 +109,7 @@ class AppStateHolder(
             screenTime = screenTime.value,
             limit = limit.value,
             appRules = appRules.value,
+            schedules = schedules.value,
         ),
     )
 

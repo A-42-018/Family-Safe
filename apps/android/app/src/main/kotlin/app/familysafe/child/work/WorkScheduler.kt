@@ -171,6 +171,22 @@ class WorkScheduler(private val context: Context) {
         workManager.cancelUniqueWork(APP_ATTEMPTS_NOW_WORK)
     }
 
+    /**
+     * Re-checks the schedules shortly after the next window starts or ends. A single one-off job (REPLACE: the newest
+     * boundary wins), no network needed, no exact alarm: it may run late, and the foreground tick and the next
+     * resume check as well.
+     */
+    fun scheduleBoundary(delayMillis: Long) {
+        val request = OneTimeWorkRequestBuilder<ScheduleBoundaryWorker>()
+            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+            .build()
+        workManager.enqueueUniqueWork(SCHEDULE_BOUNDARY_WORK, ExistingWorkPolicy.REPLACE, request)
+    }
+
+    fun cancelScheduleBoundary() {
+        workManager.cancelUniqueWork(SCHEDULE_BOUNDARY_WORK)
+    }
+
     private fun networkConstraints(): Constraints =
         Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
@@ -187,6 +203,7 @@ class WorkScheduler(private val context: Context) {
         const val DEVICE_CONFIG_WORK = "device-config"
         const val DEVICE_CONFIG_NOW_WORK = "device-config-now"
         const val APP_ATTEMPTS_NOW_WORK = "app-attempts-now"
+        const val SCHEDULE_BOUNDARY_WORK = "schedule-boundary"
         private const val BACKOFF_MINUTES = 1L
     }
 }

@@ -28,6 +28,7 @@ import app.familysafe.child.domain.DeviceInfoReport
 import app.familysafe.child.domain.InstalledApp
 import app.familysafe.child.domain.LimitLevel
 import app.familysafe.child.domain.LimitStatus
+import app.familysafe.child.domain.ScheduleStatus
 import app.familysafe.child.domain.UsageDisplay
 import app.familysafe.child.domain.UsageReport
 import app.familysafe.child.ui.common.DisconnectedNotice
@@ -49,6 +50,7 @@ fun DeviceStatusScreen(
     screenTime: CachedScreenTimeConfig?,
     limit: LimitStatus,
     appRules: AppRuleStatus,
+    schedules: ScheduleStatus,
     onOpen: (Destination) -> Unit,
 ) {
     ScreenScaffold(stringResource(R.string.title_device_status), onBack = null) { padding ->
@@ -75,6 +77,8 @@ fun DeviceStatusScreen(
                 ParentRules(screenTime)
                 HorizontalDivider()
                 AppRules(appRules, appInventory)
+                HorizontalDivider()
+                ParentSchedules(screenTime, schedules)
             }
             HorizontalDivider()
             Text(stringResource(R.string.device_status_menu_header), style = MaterialTheme.typography.titleSmall)
@@ -371,4 +375,67 @@ private fun AppRules(status: AppRuleStatus, inventory: AppInventoryReport?) {
         }
     }
     Text(stringResource(R.string.app_rules_note), style = MaterialTheme.typography.bodySmall)
+}
+
+@Composable
+private fun ParentSchedules(cached: CachedScreenTimeConfig?, status: ScheduleStatus) {
+    Text(stringResource(R.string.schedules_header), style = MaterialTheme.typography.titleSmall)
+    Text(stringResource(R.string.schedules_intro), style = MaterialTheme.typography.bodyMedium)
+    when (status) {
+        is ScheduleStatus.Unchecked ->
+            Text(stringResource(R.string.schedules_unchecked), style = MaterialTheme.typography.labelLarge)
+        is ScheduleStatus.Inactive ->
+            Text(
+                stringResource(ScheduleFormat.inactiveMessage(status.reason)),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        is ScheduleStatus.Active -> {
+            cached?.config?.schedules?.forEach { window ->
+                val days = if (ScheduleFormat.isEveryDay(window.days)) {
+                    stringResource(R.string.schedules_every_day)
+                } else {
+                    ScheduleFormat.daysText(window.days)
+                }
+                Text(
+                    stringResource(
+                        R.string.schedules_row,
+                        stringResource(ScheduleFormat.typeTitle(window.type)),
+                        window.name,
+                        days,
+                        ScheduleFormat.clock(window.startMinute),
+                        ScheduleFormat.clock(window.endMinute),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            val activeNames = status.active.map { stringResource(ScheduleFormat.typeTitle(it.window.type)) }
+            Text(
+                if (status.isQuiet) {
+                    stringResource(R.string.schedules_now, activeNames.joinToString(", "))
+                } else {
+                    stringResource(R.string.schedules_none_now)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            status.nextBoundaryEpochMillis?.let {
+                Text(
+                    stringResource(
+                        R.string.schedules_next,
+                        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it)),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Text(
+                stringResource(
+                    if (status.parentZone) R.string.schedules_zone_parent else R.string.schedules_zone_phone,
+                    status.zoneId,
+                ),
+                style = MaterialTheme.typography.labelLarge,
+            )
+            if (status.rulesStale) {
+                Text(stringResource(R.string.rules_stale), style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
 }

@@ -159,7 +159,8 @@ describe("display helpers", () => {
   it("copy is honest about what the phone can and cannot do", () => {
     expect(ENFORCEMENT_NOTE).toMatch(/does not let this app lock the phone/);
     expect(ENFORCEMENT_NOTE).toMatch(/does not report a reached limit to you yet/);
-    expect(ENFORCEMENT_NOTE).toMatch(/Bedtime and school mode are not applied/);
+    expect(ENFORCEMENT_NOTE).toMatch(/Schedules are shown to your child the same way/);
+    expect(ENFORCEMENT_NOTE).not.toMatch(/not applied/);
     expect(ENFORCEMENT_NOTE).not.toMatch(/\b(secure|safe|protected)\b/i);
     expect(ENFORCEMENT_NOTE).not.toMatch(/guaranteed|cannot be bypassed|locked out/i);
   });

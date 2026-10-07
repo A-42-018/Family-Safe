@@ -22,6 +22,8 @@ data class ChildAppState(
     val limit: LimitStatus = LimitStatus.Unchecked,
     /** The parent's per-app rules measured against today's usage, checked on this device (memory only). */
     val appRules: AppRuleStatus = AppRuleStatus.Unchecked,
+    /** The parent's schedules read against the clock, checked on this device (memory only). */
+    val schedules: ScheduleStatus = ScheduleStatus.Unchecked,
 ) {
     val isEnrolled: Boolean get() = enrollment !is EnrollmentState.NotEnrolled
     val sharesAnything: Boolean get() = isEnrolled

@@ -38,6 +38,7 @@ import app.familysafe.child.data.PermissionHistoryStore
 import app.familysafe.child.data.PermissionStateReader
 import app.familysafe.child.data.PermissionStateStore
 import app.familysafe.child.data.PermissionSyncRepository
+import app.familysafe.child.data.ScheduleStatusStore
 import app.familysafe.child.data.SealedSecureStore
 import app.familysafe.child.data.SecureStore
 import app.familysafe.child.data.SharedPrefsBlobStorage
@@ -54,6 +55,7 @@ import app.familysafe.child.domain.DeviceInfoPolicy
 import app.familysafe.child.domain.HeartbeatPolicy
 import app.familysafe.child.domain.InstalledAppsSource
 import app.familysafe.child.domain.PermissionSyncPolicy
+import app.familysafe.child.domain.ScheduleBoundary
 import app.familysafe.child.domain.ScreenTimeConfigPolicy
 import app.familysafe.child.domain.UsageAccess
 import app.familysafe.child.domain.UsagePolicy
@@ -66,6 +68,7 @@ import app.familysafe.child.work.DeviceInfoRunner
 import app.familysafe.child.work.HeartbeatRunner
 import app.familysafe.child.work.LimitCheckRunner
 import app.familysafe.child.work.PermissionSyncRunner
+import app.familysafe.child.work.ScheduleCheckRunner
 import app.familysafe.child.work.UsageRunner
 import app.familysafe.child.work.WorkScheduler
 import kotlin.coroutines.cancellation.CancellationException
@@ -223,6 +226,14 @@ class AppContainer(private val context: Context) {
         )
     }
 
+    /** Schedule check result; memory only, written only by [scheduleCheckRunner]. */
+    val scheduleStatusStore: ScheduleStatusStore by lazy { ScheduleStatusStore() }
+
+    /** On-device schedule check: the cached windows against the clock and the zone. Sends nothing, stores nothing. */
+    val scheduleCheckRunner: ScheduleCheckRunner by lazy {
+        ScheduleCheckRunner(rules = { deviceConfigStore.cached.value }, status = scheduleStatusStore)
+    }
+
     val appAttemptRunner: AppAttemptRunner by lazy {
         AppAttemptRunner(repository = AppAttemptRepository(deviceHttp), store = appAttemptStore)
     }
@@ -245,6 +256,7 @@ class AppContainer(private val context: Context) {
             deviceConfigStore.cached,
             limitStatusStore.status,
             appRuleStatusStore.status,
+            scheduleStatusStore.status,
         )
     }
 
@@ -275,6 +287,7 @@ class AppContainer(private val context: Context) {
                         workScheduler.cancelUsage()
                         workScheduler.cancelDeviceConfig()
                         workScheduler.cancelAppAttempts()
+                        workScheduler.cancelScheduleBoundary()
                     }
                 }
             } catch (e: CancellationException) {
@@ -291,6 +304,7 @@ class AppContainer(private val context: Context) {
                     if (cached == null) appAttemptStore.clear()
                     limitCheckRunner.check()
                     appRuleCheckRunner.check()
+                    checkSchedules()
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -310,12 +324,29 @@ class AppContainer(private val context: Context) {
             try {
                 limitCheckRunner.check()
                 appRuleCheckRunner.check()
+                checkSchedules()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
                 // The next tick or resume tries again.
             }
         }
+    }
+
+    /**
+     * Reads the parent's schedules against the clock (memory only) and arms one WorkManager job just after the next
+     * start or end. Called on resume, on every foreground tick, when the rules change and by that job itself, so a
+     * time-zone or date change is picked up by the next of them (no receiver, no new permission, no exact alarm).
+     * While not enrolled or after a disconnect nothing is armed. Best effort.
+     */
+    fun checkSchedules() {
+        val status = scheduleCheckRunner.check()
+        val delay = if (HeartbeatPolicy.shouldRun(appState.state.value)) {
+            ScheduleBoundary.nextDelayMillis(status, System.currentTimeMillis())
+        } else {
+            null
+        }
+        if (delay == null) workScheduler.cancelScheduleBoundary() else workScheduler.scheduleBoundary(delay)
     }
 
     /**
@@ -339,6 +370,7 @@ class AppContainer(private val context: Context) {
                 queueDeviceConfigIfDue()
                 limitCheckRunner.check()
                 appRuleCheckRunner.check()
+                checkSchedules()
                 if (appAttemptStore.snapshot().pending.isNotEmpty()) queueAppAttemptsNow()
             } catch (e: CancellationException) {
                 throw e

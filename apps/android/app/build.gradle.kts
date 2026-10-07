@@ -31,7 +31,7 @@ android {
         minSdk = 31 // Android 12 (prompt §50 tests Android 12-16)
         targetSdk = 36
         versionCode = 1
-        versionName = "0.18.0"
+        versionName = "0.19.0"
     }
 
     buildTypes {

@@ -18,6 +18,7 @@ import app.familysafe.child.domain.ChildAppState
 import app.familysafe.child.domain.LimitNotice
 import app.familysafe.child.domain.LimitStatus
 import app.familysafe.child.domain.NoticeKeys
+import app.familysafe.child.domain.QuietTimeNotices
 import app.familysafe.child.ui.about.AboutScreen
 import app.familysafe.child.ui.devicestatus.DeviceStatusScreen
 import app.familysafe.child.ui.enrollment.EnrolledScreen
@@ -25,6 +26,7 @@ import app.familysafe.child.ui.enrollment.EnrollmentScreen
 import app.familysafe.child.ui.enrollment.EnrollmentViewModel
 import app.familysafe.child.ui.limit.AppRuleNoticeScreen
 import app.familysafe.child.ui.limit.LimitReachedScreen
+import app.familysafe.child.ui.limit.QuietTimeScreen
 import app.familysafe.child.ui.navigation.Destination
 import app.familysafe.child.ui.permissions.PermissionsScreen
 import app.familysafe.child.ui.permissions.UsageAccessSettings
@@ -44,6 +46,9 @@ fun ChildApp(state: ChildAppState, versionName: String, enrollmentViewModelFacto
         var dismissedAppNotices by rememberSaveable { mutableStateOf("") }
         val evaluation = (state.limit as? LimitStatus.Active)?.evaluation
         val appNotice = AppRuleNotices.pending(state.appRules, dismissedAppNotices)
+        // Dismissed quiet-time notices (per window and day) as one saveable string (see NoticeKeys).
+        var dismissedQuiet by rememberSaveable { mutableStateOf("") }
+        val quiet = QuietTimeNotices.pending(state.schedules, dismissedQuiet)
         Box {
             NavHost(navController = nav, startDestination = Destination.start.route) {
                 composable(Destination.DeviceStatus.route) {
@@ -56,6 +61,7 @@ fun ChildApp(state: ChildAppState, versionName: String, enrollmentViewModelFacto
                         state.screenTime,
                         state.limit,
                         state.appRules,
+                        state.schedules,
                     ) {
                         nav.navigate(it.route)
                     }
@@ -89,6 +95,10 @@ fun ChildApp(state: ChildAppState, versionName: String, enrollmentViewModelFacto
             } else if (appNotice != null) {
                 AppRuleNoticeScreen(appNotice, AppRuleLabels.labelFor(appNotice.packageName, state.appInventory)) {
                     dismissedAppNotices = NoticeKeys.add(dismissedAppNotices, appNotice.dismissKey)
+                }
+            } else if (quiet != null) {
+                QuietTimeScreen(quiet) {
+                    dismissedQuiet = NoticeKeys.add(dismissedQuiet, QuietTimeNotices.dismissKey(quiet))
                 }
             }
         }
