@@ -26,6 +26,7 @@ export const RETENTION_SCHEDULE_MINUTES = 15;
 /** The keys of the jsonb that `retention_run()` returns, in order. */
 export const RETENTION_RESULT_KEYS = [
   "devices_marked_offline",
+  "device_commands_expired",
   "audit_logs",
   "notifications",
   "device_events",

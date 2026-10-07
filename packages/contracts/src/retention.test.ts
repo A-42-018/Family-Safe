@@ -2,8 +2,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { OFFLINE_AFTER_SECONDS, RETENTION_DAYS, RETENTION_RESULT_KEYS, RETENTION_SCHEDULE_MINUTES } from "./retention";
 
-const sql = readFileSync(new URL("../../../supabase/migrations/20261007000700_retention_jobs.sql", import.meta.url), "utf8");
-const code = sql.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n");
+const strip = (s: string): string => s.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n");
+const first = strip(readFileSync(new URL("../../../supabase/migrations/20261007000700_retention_jobs.sql", import.meta.url), "utf8"));
+/** `retention_run` was re-created by 20a-1 (it also expires commands); the LATEST definition is the one that counts. */
+const latest = strip(readFileSync(new URL("../../../supabase/migrations/20261007000800_command_sync.sql", import.meta.url), "utf8"));
+const code = latest.slice(latest.indexOf("create or replace function public.retention_run()"));
 
 describe("retention windows", () => {
   it("match the prompt: usage 90 d, audit 180 d, location at most 90 d", () => {
@@ -42,14 +45,15 @@ describe("SQL (migration 20261007000700_retention_jobs.sql) agrees with the cont
   it("the sweep and the schedule use the contract's numbers", () => {
     expect(OFFLINE_AFTER_SECONDS).toBe(2700);
     expect(code).toContain("public.device_mark_stale_offline()");
+    expect(code).toContain("public.device_commands_expire()");
     expect(readFileSync(new URL("../../../supabase/migrations/20260929001100_heartbeat.sql", import.meta.url), "utf8")).toContain(`p_stale_seconds int default ${OFFLINE_AFTER_SECONDS}`);
-    expect(code).toContain(`'*/${RETENTION_SCHEDULE_MINUTES} * * * *'`);
+    expect(first).toContain(`'*/${RETENTION_SCHEDULE_MINUTES} * * * *'`);
   });
   it("is service_role only, SECURITY DEFINER with an empty search_path, and schedules only when pg_cron already exists", () => {
     expect(code).toMatch(/revoke all on function public\.retention_run\(\) from public, anon, authenticated;/);
     expect(code).toMatch(/grant execute on function public\.retention_run\(\) to service_role;/);
     expect(code).toMatch(/security definer\s+set search_path = ''/);
-    expect(code).toContain("to_regprocedure('cron.schedule(text,text,text)') is not null");
-    expect(code).not.toMatch(/create extension/i);
+    expect(first).toContain("to_regprocedure('cron.schedule(text,text,text)') is not null");
+    expect(first).not.toMatch(/create extension/i);
   });
 });

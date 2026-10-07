@@ -36,7 +36,7 @@ select ok(has_function_privilege('service_role','public.retention_run()','execut
 select ok((select p.prosecdef and p.proconfig @> array['search_path=""'] from pg_proc p where p.oid = 'public.retention_run()'::regprocedure), 'SECURITY DEFINER with an empty search_path');
 
 set local role service_role;
-select is((select public.retention_run()), '{"devices_marked_offline":1,"audit_logs":1,"notifications":1,"device_events":1,"app_usage_daily":1,"device_usage_daily":1,"location_points":1,"device_commands":1,"device_credentials":1,"pairing_tokens":1}'::jsonb, 'one run removes exactly the old row of every kind and marks the silent device');
+select is((select public.retention_run()), '{"devices_marked_offline":1,"device_commands_expired":0,"audit_logs":1,"notifications":1,"device_events":1,"app_usage_daily":1,"device_usage_daily":1,"location_points":1,"device_commands":1,"device_credentials":1,"pairing_tokens":1}'::jsonb, 'one run removes exactly the old row of every kind and marks the silent device');
 reset role;
 select is((select device_status from public.devices where id = 'd0000000-0000-4000-8000-0000000000a1'), 'OFFLINE', 'the silent device is OFFLINE');
 select is((select device_status from public.devices where id = 'd0000000-0000-4000-8000-0000000000a2'), 'ONLINE', 'the fresh device stays ONLINE');
@@ -57,7 +57,7 @@ select is((select count(*)::int from public.notifications where created_at < now
 select is((select count(*)::int from public.notifications where type = 'BATTERY_LOW'), 1, 'the 89-day-old notification survives');
 
 set local role service_role;
-select is((select public.retention_run()), '{"devices_marked_offline":0,"audit_logs":0,"notifications":0,"device_events":0,"app_usage_daily":0,"device_usage_daily":0,"location_points":0,"device_commands":0,"device_credentials":0,"pairing_tokens":0}'::jsonb, 'a second run changes nothing');
+select is((select public.retention_run()), '{"devices_marked_offline":0,"device_commands_expired":0,"audit_logs":0,"notifications":0,"device_events":0,"app_usage_daily":0,"device_usage_daily":0,"location_points":0,"device_commands":0,"device_credentials":0,"pairing_tokens":0}'::jsonb, 'a second run changes nothing');
 reset role;
 set local role authenticated;
 select throws_ok($$select public.retention_run()$$, '42501', null, 'a signed-in parent cannot run it');
