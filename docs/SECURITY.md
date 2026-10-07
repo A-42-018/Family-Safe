@@ -127,3 +127,8 @@ Parent writes go through three RPCs (ownership in SQL, foreign ≙ missing) **or
 
 ## Phase 19a-2 — schedules on the device pull
 `device-config` still authenticates with `requireActiveDevice` before anything is read; the two new keys come from the same SQL read by the device id in the JWT, so a device can only receive its own schedules and time zone. Error bodies and logs never contain schedule names, times or the zone (Deno-tested). The response schema forbids unknown keys, so no id of another device or family can be added by accident.
+
+## Retention (Phase 32a)
+`public.retention_run()` (service_role only) is the single maintenance job: it marks devices that have been silent for 45 minutes OFFLINE (a `DEVICE_OFFLINE` event, which the notification trigger turns into a parent notification) and deletes rows older than their window — audit 180 days; notifications, events, usage and location 90 days (location per-device 7/30/90 choices arrive with Phase 22a); commands 30 days; device credentials 30 days after the refresh token expired; pairing codes 7 days after they expired. It returns the number of rows changed per step and is idempotent.
+
+**Scheduling.** The migration schedules it every 15 minutes **only when the `pg_cron` extension is already enabled** (Supabase dashboard → Database → Extensions → pg_cron); otherwise it prints a notice. It never creates the extension itself. Without a schedule nothing is purged and devices are only shown as offline by the web read-time rule. Deployment (34a) lists enabling pg_cron as a required step.

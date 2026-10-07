@@ -11,3 +11,4 @@ export * from "./device-config";
 export * from "./device-app-events";
 export * from "./notifications";
 export * from "./device-limit-events";
+export * from "./retention";
