@@ -1,11 +1,14 @@
 package app.familysafe.child.domain
 
+import java.net.URLDecoder
+import java.net.URLEncoder
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.util.Locale
 
 /** Limits of the schedule list. The constants are checked against `device-config.ts` by a JVM drift test (19c-2). */
 object ScheduleLimits {
@@ -234,4 +237,58 @@ object ScheduleEvaluator {
         ZonedDateTime.of(LocalDateTime.of(date, LocalTime.of(minuteOfDay / 60, minuteOfDay % 60)), zone).toInstant()
 
     private val ORDER = compareBy<ActiveWindow>({ it.window.type.ordinal }, { it.startsAt }, { it.window.id })
+}
+
+/** Same format check as `isTimezoneNameFormat` in the contract: `UTC` or `Region/City[/Sub]`, 1-64 characters. */
+object TimezoneName {
+    /** Source of the contract's `TIMEZONE_NAME_PATTERN` (a drift test compares them). */
+    const val PATTERN_SOURCE = "^[A-Z][A-Za-z0-9_+-]*(\\/[A-Za-z0-9_+-]+){0,2}$"
+    private val PATTERN = Regex(PATTERN_SOURCE)
+    private val FORBIDDEN_TREE = Regex("^(SystemV|posix|right)/")
+    const val MAX_LENGTH = 64
+
+    fun isValid(value: String): Boolean = value.length in 1..MAX_LENGTH &&
+        PATTERN.matches(value) &&
+        (value == "UTC" || value.contains('/')) &&
+        !FORBIDDEN_TREE.containsMatchIn(value)
+}
+
+/**
+ * Cache form of the schedule list, safe inside the `;`-separated config string: windows are joined by `|`, fields by
+ * `~` (`id~TYPE~1,2,3~HH:MM~HH:MM~name`) and the parent-typed name is URL-encoded so it can hold any character.
+ */
+object ScheduleListCodec {
+    private const val FIELDS = 6
+    private const val UTF8 = "UTF-8"
+
+    fun encode(windows: List<ScheduleWindow>): String = windows.joinToString("|") { w ->
+        listOf(
+            w.id,
+            w.type.name,
+            w.days.joinToString(","),
+            hhmm(w.startMinute),
+            hhmm(w.endMinute),
+            URLEncoder.encode(w.name, UTF8),
+        ).joinToString("~")
+    }
+
+    /** Null for anything [encode] would not write or [ScheduleList] / [ScheduleWindow] would not let through. */
+    fun decode(text: String): List<ScheduleWindow>? {
+        if (text.isEmpty()) return emptyList()
+        val windows = ArrayList<ScheduleWindow>()
+        for (entry in text.split("|")) {
+            val f = entry.split("~")
+            if (f.size != FIELDS) return null
+            val days = f[2].split(",").map { it.toIntOrNull() ?: return null }
+            val name = try {
+                URLDecoder.decode(f[5], UTF8)
+            } catch (_: IllegalArgumentException) {
+                return null
+            }
+            windows += ScheduleWindow.validated(f[0], name, f[1], days, f[3], f[4]) ?: return null
+        }
+        return ScheduleList.validated(windows)
+    }
+
+    private fun hhmm(minute: Int): String = String.format(Locale.ROOT, "%02d:%02d", minute / 60, minute % 60)
 }

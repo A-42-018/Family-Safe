@@ -5,10 +5,12 @@ import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
 
 class DeviceConfigHttpMapperTest {
+    private val legacyKeys =
+        "\"bedtime_enabled\":false,\"bedtime_start\":null,\"bedtime_end\":null,\"school_mode_enabled\":false,"
     private val body = """
         {"data":{"config_version":3,"daily_limit_minutes":120,"daily_limit_overrides":{"6":180},
         "bedtime_enabled":false,"bedtime_start":null,"bedtime_end":null,"school_mode_enabled":false,
-        "app_rules":[],"server_time":"2026-10-01T09:30:00.000Z","next_interval_seconds":21600}}
+        "app_rules":[],"timezone":"Asia/Dhaka","schedules":[],"server_time":"2026-10-01T09:30:00.000Z","next_interval_seconds":21600}}
     """.trimIndent()
 
     private fun appRuleJson(pkg: String, blocked: Boolean, limit: String) =
@@ -16,6 +18,23 @@ class DeviceConfigHttpMapperTest {
 
     private fun appRulesJson(pkg: String, blocked: Boolean, limit: String) =
         "\"app_rules\":[" + appRuleJson(pkg, blocked, limit) + "]"
+
+    private fun scheduleJson(
+        id: String = "00000000-0000-4000-8000-000000000001",
+        type: String = "BEDTIME",
+        days: String = "[1,2]",
+        start: String = "21:30",
+        end: String = "07:00",
+    ) = "{\"id\":\"$id\",\"name\":\"Night\",\"type\":\"$type\",\"days\":$days," +
+        "\"start_time\":\"$start\",\"end_time\":\"$end\"}"
+
+    private fun schedulesJson(
+        id: String = "00000000-0000-4000-8000-000000000001",
+        type: String = "BEDTIME",
+        days: String = "[1,2]",
+        start: String = "21:30",
+        end: String = "07:00",
+    ) = "\"schedules\":[" + scheduleJson(id, type, days, start, end) + "]"
 
     private fun map(status: Int, text: String = "", retryAfter: String? = null, sent: Int? = 2) =
         DeviceConfigHttpMapper.map(status, retryAfter, text, sent)
@@ -34,7 +53,16 @@ class DeviceConfigHttpMapperTest {
             body.replace("\"config_version\":3", "\"config_version\":0"),
             body.replace("\"6\":180", "\"9\":180"),
             body.replace("21600", "3600"),
-            body.replace("\"bedtime_end\":null", "\"bedtime_end\":\"07:00\""),
+            // schedules and time zone are required keys too; a dropped key must never read as "no schedules"
+            body.replace("\"schedules\":[],", ""),
+            body.replace("\"schedules\":[]", "\"schedules\":null"),
+            body.replace("\"timezone\":\"Asia/Dhaka\",", ""),
+            body.replace("Asia/Dhaka", "EST"),
+            body.replace("\"schedules\":[]", schedulesJson(start = "22:00", end = "22:00")),
+            body.replace("\"schedules\":[]", schedulesJson(type = "NAP")),
+            body.replace("\"schedules\":[]", schedulesJson(days = "[2,1]")),
+            body.replace("\"schedules\":[]", schedulesJson(id = "nope")),
+            body.replace("\"schedules\":[]", "\"schedules\":[" + scheduleJson() + "," + scheduleJson() + "]"),
             // a dropped nullable key must not read as "no limit"
             body.replace("\"daily_limit_minutes\":120,", ""),
             body.replace("\"daily_limit_overrides\":{\"6\":180},", ""),
@@ -65,6 +93,43 @@ class DeviceConfigHttpMapperTest {
         assertEquals(listOf("com.example.game", "com.example.video"), config.appRules.map { it.packageName })
         assertEquals(setOf("com.example.game"), config.blockedPackages)
         assertEquals(45, config.appRuleFor("com.example.video")!!.dailyLimitMinutes)
+    }
+
+    @Test
+    fun `200 with schedules and a zone carries them into the config`() {
+        val text = body.replace("\"schedules\":[]", schedulesJson())
+        val config = assertInstanceOf(DeviceConfigResult.Fetched::class.java, map(200, text)).parsed.config
+        assertEquals("Asia/Dhaka", config.timezone)
+        assertEquals(listOf(21 * 60 + 30), config.schedules.map { it.startMinute })
+        assertEquals(listOf(7 * 60), config.schedules.map { it.endMinute })
+    }
+
+    @Test
+    fun `a null time zone means the phone's own zone`() {
+        val text = body.replace("\"timezone\":\"Asia/Dhaka\"", "\"timezone\":null")
+        assertEquals(
+            null,
+            assertInstanceOf(DeviceConfigResult.Fetched::class.java, map(200, text)).parsed.config.timezone,
+        )
+    }
+
+    @Test
+    fun `the legacy bedtime and school keys are ignored, not read`() {
+        val changed = body.replace(
+            "\"bedtime_enabled\":false,\"bedtime_start\":null,\"bedtime_end\":null",
+            "\"bedtime_enabled\":true,\"bedtime_start\":\"21:00\",\"bedtime_end\":\"21:00\"",
+        )
+        assertInstanceOf(DeviceConfigResult.Fetched::class.java, map(200, changed))
+        assertInstanceOf(
+            DeviceConfigResult.Fetched::class.java,
+            map(
+                200,
+                body.replace(
+                    legacyKeys,
+                    "",
+                ),
+            ),
+        )
     }
 
     @Test

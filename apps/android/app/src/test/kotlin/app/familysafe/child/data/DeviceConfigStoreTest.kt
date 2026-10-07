@@ -1,7 +1,7 @@
 package app.familysafe.child.data
 
 import app.familysafe.child.domain.AppRule
-import app.familysafe.child.domain.BedtimeWindow
+import app.familysafe.child.domain.ScheduleWindow
 import app.familysafe.child.domain.ScreenTimeConfig
 import app.familysafe.child.testutil.MapSecureStore
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -11,8 +11,23 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class DeviceConfigStoreTest {
-    private fun config(version: Int = 3) =
-        ScreenTimeConfig.validated(version, 90, mapOf(6 to 180), BedtimeWindow("21:00", "07:00"), true)!!
+    private fun config(version: Int = 3) = ScreenTimeConfig.validated(
+        version,
+        90,
+        mapOf(6 to 180),
+        emptyList(),
+        "Asia/Dhaka",
+        listOf(
+            ScheduleWindow.validated(
+                "00000000-0000-4000-8000-000000000001",
+                "Night",
+                "BEDTIME",
+                listOf(1),
+                "21:00",
+                "07:00",
+            )!!,
+        ),
+    )!!
 
     @Test
     fun `starts empty`() {
@@ -53,12 +68,13 @@ class DeviceConfigStoreTest {
     fun `a new config replaces the old one completely`() {
         val store = DeviceConfigStore(MapSecureStore())
         store.record(config(3), 5L)
-        store.record(ScreenTimeConfig.validated(4, null, emptyMap(), null, false)!!, 8L)
+        store.record(ScreenTimeConfig.validated(4, null, emptyMap())!!, 8L)
         val now = store.cached.value!!
         assertEquals(4, now.config.version)
         assertNull(now.config.dailyLimitMinutes)
         assertTrue(now.config.dayOverrides.isEmpty())
-        assertNull(now.config.bedtime)
+        assertNull(now.config.timezone)
+        assertTrue(now.config.schedules.isEmpty())
     }
 
     @Test
@@ -76,12 +92,14 @@ class DeviceConfigStoreTest {
         val backing = MapSecureStore()
         val junkValues = listOf(
             "yesterday",
-            "v2;5;0;90;;;0;",
-            "v2;5;3;99999;;;0;",
-            "v2;5;3;90;9=1;;0;",
-            "v2;5;3;90;;22:00-22:00;0;",
-            "v2;5;3;90;;;0;x=B",
-            // second one: the pre-18c six-field form
+            "v3;5;0;90;;;;",
+            "v3;5;3;99999;;;;",
+            "v3;5;3;90;9=1;;;",
+            "v3;5;3;90;;EST;;",
+            "v3;5;3;90;;;bad;",
+            "v3;5;3;90;;;;x=B",
+            // older forms: v2 (bedtime/school) and the pre-18c six-field form
+            "v2;5;3;90;;;0;",
             "5;3;90;;;0",
         )
         for (junk in junkValues) {
@@ -108,7 +126,7 @@ class DeviceConfigStoreTest {
     fun `app rules survive a restart and a pre-18c cache is ignored`() {
         val backing = MapSecureStore()
         val rules = listOf(AppRule.validated("com.example.game", true, null)!!)
-        val withRules = ScreenTimeConfig.validated(4, 90, emptyMap(), null, false, rules)!!
+        val withRules = ScreenTimeConfig.validated(4, 90, emptyMap(), rules)!!
         DeviceConfigStore(backing).record(withRules, 9L)
         assertEquals(rules, DeviceConfigStore(backing).cached.value!!.config.appRules)
         backing.map["screen_time_config"] = "9;4;90;;;0"

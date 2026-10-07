@@ -2,6 +2,7 @@ package app.familysafe.child.data
 
 import app.familysafe.child.domain.ParsedScreenTimeConfig
 import app.familysafe.child.domain.RawAppRule
+import app.familysafe.child.domain.RawSchedule
 import app.familysafe.child.domain.ScreenTimeConfigParser
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -21,6 +22,19 @@ internal data class AppRuleDto(
     override fun toString(): String = "AppRuleDto"
 }
 
+/** One entry of `schedules` (`scheduleSchema`). Every key is required and none is nullable. */
+@Serializable
+internal data class ScheduleDto(
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("type") val type: String,
+    @SerialName("days") val days: List<Int>,
+    @SerialName("start_time") val startTime: String,
+    @SerialName("end_time") val endTime: String,
+) {
+    override fun toString(): String = "ScheduleDto"
+}
+
 /**
  * Every key is required (a missing nullable key is a decoding error, not a silent null), so a server that drops a
  * rule field can never be read as "no limit". Unknown extra keys are ignored.
@@ -30,11 +44,9 @@ internal data class DeviceConfigDataDto(
     @SerialName("config_version") val configVersion: Int,
     @SerialName("daily_limit_minutes") val dailyLimitMinutes: Int?,
     @SerialName("daily_limit_overrides") val dailyLimitOverrides: Map<String, Int>,
-    @SerialName("bedtime_enabled") val bedtimeEnabled: Boolean,
-    @SerialName("bedtime_start") val bedtimeStart: String?,
-    @SerialName("bedtime_end") val bedtimeEnd: String?,
-    @SerialName("school_mode_enabled") val schoolModeEnabled: Boolean,
     @SerialName("app_rules") val appRules: List<AppRuleDto>,
+    @SerialName("timezone") val timezone: String?,
+    @SerialName("schedules") val schedules: List<ScheduleDto>,
     @SerialName("server_time") val serverTime: String,
     @SerialName("next_interval_seconds") val nextIntervalSeconds: Int,
 ) {
@@ -54,11 +66,9 @@ internal object DeviceConfigWire {
             version = dto.configVersion,
             dailyLimitMinutes = dto.dailyLimitMinutes,
             dayOverrides = dto.dailyLimitOverrides,
-            bedtimeEnabled = dto.bedtimeEnabled,
-            bedtimeStart = dto.bedtimeStart,
-            bedtimeEnd = dto.bedtimeEnd,
-            schoolModeEnabled = dto.schoolModeEnabled,
             appRules = dto.appRules.map { RawAppRule(it.packageName, it.blocked, it.dailyLimitMinutes) },
+            timezone = dto.timezone,
+            schedules = dto.schedules.map { RawSchedule(it.id, it.name, it.type, it.days, it.startTime, it.endTime) },
             serverTime = dto.serverTime,
             nextIntervalSeconds = dto.nextIntervalSeconds,
         )

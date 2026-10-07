@@ -1,6 +1,6 @@
 package app.familysafe.child.ui.devicestatus
 
-import app.familysafe.child.domain.BedtimeWindow
+import app.familysafe.child.domain.ScheduleWindow
 import app.familysafe.child.domain.ScreenTimeConfig
 import java.util.Locale
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 
 class ScreenTimeFormatTest {
     private fun config(limit: Int?, overrides: Map<Int, Int> = emptyMap()) =
-        ScreenTimeConfig.validated(2, limit, overrides, null, false)!!
+        ScreenTimeConfig.validated(2, limit, overrides)!!
 
     @Test
     fun `without overrides there is one every-day line`() {
@@ -43,8 +43,16 @@ class ScreenTimeFormatTest {
     }
 
     @Test
-    fun `bedtime window is not part of the day plan`() {
-        val withBedtime = ScreenTimeConfig.validated(2, 60, emptyMap(), BedtimeWindow("21:00", "07:00"), true)!!
+    fun `schedules are not part of the day plan`() {
+        val night = ScheduleWindow.validated(
+            "00000000-0000-4000-8000-000000000001",
+            "Night",
+            "BEDTIME",
+            listOf(1),
+            "21:00",
+            "07:00",
+        )!!
+        val withBedtime = ScreenTimeConfig.validated(2, 60, emptyMap(), emptyList(), null, listOf(night))!!
         assertEquals(listOf(DayLimitLine(null, 60)), ScreenTimeFormat.plan(withBedtime, Locale.ENGLISH))
     }
 }

@@ -27,15 +27,6 @@ object ScreenTimeLimits {
     const val EXPIRY_MILLIS = EXPIRY_DAYS * 24L * 60L * 60L * 1_000L
 }
 
-/** Bedtime window as the server sends it: `HH:MM` strings, only while bedtime is on. Not applied until Phase 19. */
-class BedtimeWindow(val start: String, val end: String) {
-    override fun equals(other: Any?): Boolean = other is BedtimeWindow && other.start == start && other.end == end
-
-    override fun hashCode(): Int = 31 * start.hashCode() + end.hashCode()
-
-    override fun toString(): String = "BedtimeWindow"
-}
-
 /**
  * The parent's screen-time rules as the server last sent them. Built only through [validated] /
  * [ScreenTimeConfigParser] so an off-contract value can never reach the cache or the screens. `toString` is fixed
@@ -47,10 +38,12 @@ class ScreenTimeConfig private constructor(
     val dailyLimitMinutes: Int?,
     /** ISO weekday (1 = Monday … 7 = Sunday) to minutes; a present key replaces the default, 0 = no screen time. */
     val dayOverrides: Map<Int, Int>,
-    val bedtime: BedtimeWindow?,
-    val schoolModeEnabled: Boolean,
     /** Per-app restrictions (Phase 18), sorted by package name; empty = none. */
     val appRules: List<AppRule>,
+    /** The parent's IANA zone for the schedules; null = read them in the phone's own zone. */
+    val timezone: String?,
+    /** Enabled schedule windows (Phase 19), in the server's order; empty = none. */
+    val schedules: List<ScheduleWindow>,
 ) {
     /** Same rule as `effectiveDailyLimitMinutes` in the contracts: an override beats the default; null = no limit. */
     fun limitFor(isoWeekday: Int): Int? =
@@ -71,18 +64,16 @@ class ScreenTimeConfig private constructor(
         other.version == version &&
         other.dailyLimitMinutes == dailyLimitMinutes &&
         other.dayOverrides == dayOverrides &&
-        other.bedtime == bedtime &&
-        other.schoolModeEnabled == schoolModeEnabled &&
-        other.appRules == appRules
+        other.appRules == appRules &&
+        other.timezone == timezone &&
+        other.schedules == schedules
 
     override fun hashCode(): Int =
-        listOf(version, dailyLimitMinutes, dayOverrides, bedtime, schoolModeEnabled, appRules).hashCode()
+        listOf(version, dailyLimitMinutes, dayOverrides, appRules, timezone, schedules).hashCode()
 
     override fun toString(): String = "ScreenTimeConfig(v$version)"
 
     companion object {
-        private val HHMM = Regex("""^([01][0-9]|2[0-3]):[0-5][0-9]$""")
-
         fun etagFor(version: Int): String = "\"v$version\""
 
         /** Null when any value is outside what the contract allows. Overrides are copied (sorted by weekday). */
@@ -90,9 +81,9 @@ class ScreenTimeConfig private constructor(
             version: Int,
             dailyLimitMinutes: Int?,
             dayOverrides: Map<Int, Int>,
-            bedtime: BedtimeWindow?,
-            schoolModeEnabled: Boolean,
             appRules: List<AppRule> = emptyList(),
+            timezone: String? = null,
+            schedules: List<ScheduleWindow> = emptyList(),
         ): ScreenTimeConfig? {
             if (version !in 1..ScreenTimeLimits.MAX_VERSION) return null
             if (dailyLimitMinutes != null && dailyLimitMinutes !in 0..ScreenTimeLimits.MAX_MINUTES) return null
@@ -100,13 +91,11 @@ class ScreenTimeConfig private constructor(
                 day !in 1..ISO_WEEKDAYS || minutes !in 0..ScreenTimeLimits.MAX_MINUTES
             }
             if (badOverride) return null
-            if (bedtime != null) {
-                val badTimes = !HHMM.matches(bedtime.start) || !HHMM.matches(bedtime.end)
-                if (badTimes || bedtime.start == bedtime.end) return null
-            }
+            if (timezone != null && !TimezoneName.isValid(timezone)) return null
             val rules = AppRuleList.validated(appRules) ?: return null
+            val windows = ScheduleList.validated(schedules) ?: return null
             val sorted = dayOverrides.toSortedMap().toMap()
-            return ScreenTimeConfig(version, dailyLimitMinutes, sorted, bedtime, schoolModeEnabled, rules)
+            return ScreenTimeConfig(version, dailyLimitMinutes, sorted, rules, timezone, windows)
         }
 
         const val ISO_WEEKDAYS = 7
@@ -153,6 +142,18 @@ class ParsedScreenTimeConfig(val config: ScreenTimeConfig, val serverTimeEpochMi
     override fun toString(): String = "ParsedScreenTimeConfig"
 }
 
+/** One `schedules` entry as it arrives; checked by [ScheduleWindow.validated]. */
+class RawSchedule(
+    val id: String,
+    val name: String,
+    val type: String,
+    val days: List<Int>,
+    val startTime: String,
+    val endTime: String,
+) {
+    override fun toString(): String = "RawSchedule"
+}
+
 /** Turns the wire values of `deviceConfigSchema` into a [ScreenTimeConfig]; null for anything off-contract. */
 object ScreenTimeConfigParser {
     private val WEEKDAY_KEY = Regex("^[1-7]$")
@@ -162,11 +163,9 @@ object ScreenTimeConfigParser {
         version: Int,
         dailyLimitMinutes: Int?,
         dayOverrides: Map<String, Int>,
-        bedtimeEnabled: Boolean,
-        bedtimeStart: String?,
-        bedtimeEnd: String?,
-        schoolModeEnabled: Boolean,
         appRules: List<RawAppRule>,
+        timezone: String?,
+        schedules: List<RawSchedule>,
         serverTime: String,
         nextIntervalSeconds: Int,
     ): ParsedScreenTimeConfig? {
@@ -178,33 +177,30 @@ object ScreenTimeConfigParser {
         }
         if (dayOverrides.keys.any { !WEEKDAY_KEY.matches(it) }) return null
         val overrides = dayOverrides.mapKeys { it.key.toInt() }
-        // The contract ties the two times to the switch: both set while on (and different), both null while off.
-        val bedtime = if (bedtimeEnabled) {
-            if (bedtimeStart == null || bedtimeEnd == null) return null
-            BedtimeWindow(bedtimeStart, bedtimeEnd)
-        } else {
-            if (bedtimeStart != null || bedtimeEnd != null) return null
-            null
-        }
         if (appRules.size > AppRuleLimits.MAX_RULES) return null
         val rules = appRules.map { AppRule.validated(it) ?: return null }
+        if (schedules.size > ScheduleLimits.MAX) return null
+        val windows = schedules.map {
+            ScheduleWindow.validated(it.id, it.name, it.type, it.days, it.startTime, it.endTime) ?: return null
+        }
         val config = ScreenTimeConfig.validated(
-            version, dailyLimitMinutes, overrides, bedtime, schoolModeEnabled, rules,
+            version, dailyLimitMinutes, overrides, rules, timezone, windows,
         ) ?: return null
         return ParsedScreenTimeConfig(config, serverMillis)
     }
 }
 
 /**
- * Single-string form for the sealed store, versioned: `v2;validatedAt;version;limit;overrides;bedtime;school;apps`
- * where overrides is `1=60,3=0` (empty = none), bedtime is `HH:MM-HH:MM` (empty = off), school is `0|1` and apps is
- * the [AppRuleList] form (empty = none). The pre-18c form (six fields, no `v2`) reads as "nothing cached" on
- * purpose: the server's ETag now covers app rules, so an old cache could answer 304 and never receive them. A
- * missing cache makes the next pull a full one.
+ * Single-string form for the sealed store, versioned:
+ * `v3;validatedAt;version;limit;overrides;timezone;schedules;apps` where overrides is `1=60,3=0` (empty = none),
+ * timezone is the IANA name (empty = the phone's own), schedules is [ScheduleListCodec] (empty = none) and apps is
+ * the [AppRuleList] form (empty = none). Older forms (`v2`, and the six-field pre-18c one) read as "nothing cached"
+ * on purpose: the server's ETag covers app rules and schedules, so an old cache could answer 304 and never receive
+ * them. A missing cache makes the next pull a full one.
  */
 object ScreenTimeConfigCodec {
     private const val FIELDS = 8
-    private const val VERSION_TAG = "v2"
+    private const val VERSION_TAG = "v3"
 
     fun encode(cached: CachedScreenTimeConfig): String = with(cached.config) {
         listOf(
@@ -213,8 +209,8 @@ object ScreenTimeConfigCodec {
             version.toString(),
             dailyLimitMinutes?.toString().orEmpty(),
             dayOverrides.entries.joinToString(",") { "${it.key}=${it.value}" },
-            bedtime?.let { "${it.start}-${it.end}" }.orEmpty(),
-            if (schoolModeEnabled) "1" else "0",
+            timezone.orEmpty(),
+            ScheduleListCodec.encode(schedules),
             AppRuleList.encode(appRules),
         ).joinToString(";")
     }
@@ -236,20 +232,10 @@ object ScreenTimeConfigCodec {
                 if (overrides.put(day, minutes) != null) return null
             }
         }
-        val bedtime = if (parts[5].isEmpty()) {
-            null
-        } else {
-            val window = parts[5].split("-")
-            if (window.size != 2) return null
-            BedtimeWindow(window[0], window[1])
-        }
-        val school = when (parts[6]) {
-            "1" -> true
-            "0" -> false
-            else -> return null
-        }
+        val timezone = parts[5].ifEmpty { null }
+        val schedules = ScheduleListCodec.decode(parts[6]) ?: return null
         val rules = AppRuleList.decode(parts[7]) ?: return null
-        val config = ScreenTimeConfig.validated(version, limit, overrides, bedtime, school, rules) ?: return null
+        val config = ScreenTimeConfig.validated(version, limit, overrides, rules, timezone, schedules) ?: return null
         return CachedScreenTimeConfig(config, validatedAt)
     }
 }

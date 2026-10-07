@@ -166,9 +166,7 @@
     <string name="rules_limit_none">no limit</string>
     <string name="rules_minutes_hm">%1$d h %2$d min</string>
     <string name="rules_minutes_m">%1$d min</string>
-    <string name="rules_bedtime">Bedtime window: %1$s to %2$s</string>
-    <string name="rules_school_mode">School mode is switched on.</string>
-    <string name="rules_applies_note">The daily limit is checked on this phone, only while this app is open. The app cannot lock the phone or close other apps. Bedtime and school mode are shown here but not applied yet. App rules are listed in the next section.</string>
+    <string name="rules_applies_note">The daily limit is checked on this phone, only while this app is open. The app cannot lock the phone or close other apps. Schedules are not applied on this phone yet. App rules are listed in the next section.</string>
     <string name="rules_stale">These rules were last confirmed a while ago. The app could not confirm them with the service recently. They stay on this device until they expire.</string>
     <string name="rules_expired">These rules were not confirmed for over a week and are no longer used. They will be used again once the app can reach the service.</string>
     <string name="rules_checked_at">Last confirmed: %1$s</string>

@@ -38,8 +38,7 @@ class LimitCheckRunnerTest {
         }
     }
 
-    private fun cache(limit: Int?) =
-        CachedScreenTimeConfig(ScreenTimeConfig.validated(2, limit, emptyMap(), null, false)!!, noon)
+    private fun cache(limit: Int?) = CachedScreenTimeConfig(ScreenTimeConfig.validated(2, limit, emptyMap())!!, noon)
 
     private val twoHours = listOf(UsageEvent(UsageEventKind.SCREEN_ON, null, noon - 2 * 3_600_000L))
 

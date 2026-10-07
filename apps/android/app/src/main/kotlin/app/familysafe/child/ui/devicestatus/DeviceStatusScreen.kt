@@ -311,12 +311,6 @@ private fun ParentRules(cached: CachedScreenTimeConfig?) {
             )
         }
     }
-    config.bedtime?.let {
-        Text(stringResource(R.string.rules_bedtime, it.start, it.end), style = MaterialTheme.typography.bodyMedium)
-    }
-    if (config.schoolModeEnabled) {
-        Text(stringResource(R.string.rules_school_mode), style = MaterialTheme.typography.bodyMedium)
-    }
     Text(stringResource(R.string.rules_applies_note), style = MaterialTheme.typography.bodyMedium)
     Text(
         stringResource(

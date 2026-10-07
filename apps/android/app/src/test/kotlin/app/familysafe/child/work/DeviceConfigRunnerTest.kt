@@ -29,7 +29,7 @@ class DeviceConfigRunnerTest {
     private fun done(status: Int, body: String = "") = AuthedOutcome.Completed(RawResponse(status, body, null))
     private fun body(version: Int, limit: Int = 60) = """
         {"data":{"config_version":$version,"daily_limit_minutes":$limit,"daily_limit_overrides":{},
-        "bedtime_enabled":false,"bedtime_start":null,"bedtime_end":null,"school_mode_enabled":false,"app_rules":[],
+        "app_rules":[],"timezone":null,"schedules":[],
         "server_time":"2026-10-01T09:30:00.000Z","next_interval_seconds":21600}}
     """.trimIndent()
 
@@ -46,7 +46,7 @@ class DeviceConfigRunnerTest {
 
     @Test
     fun `a newer version replaces the cache and the next pull is conditional on it`() {
-        store.record(ScreenTimeConfig.validated(2, 30, emptyMap(), null, false)!!, 5L)
+        store.record(ScreenTimeConfig.validated(2, 30, emptyMap())!!, 5L)
         val http = Http { done(200, body(3, limit = 45)) }
         assertEquals(DeviceConfigRunResult.Updated, runSuspend { runner(http).run() })
         assertEquals(listOf<String?>("\"v2\""), http.sent)
@@ -58,7 +58,7 @@ class DeviceConfigRunnerTest {
 
     @Test
     fun `304 only re-confirms the cached rules`() {
-        store.record(ScreenTimeConfig.validated(2, 30, emptyMap(), null, false)!!, 5L)
+        store.record(ScreenTimeConfig.validated(2, 30, emptyMap())!!, 5L)
         assertEquals(DeviceConfigRunResult.Unchanged, runSuspend { runner(Http { done(304) }, now = 99L).run() })
         val cached = store.cached.value!!
         assertEquals(2, cached.config.version)
@@ -68,7 +68,7 @@ class DeviceConfigRunnerTest {
 
     @Test
     fun `an expired cache is still sent as if-none-match so a 304 can revive it`() {
-        store.record(ScreenTimeConfig.validated(2, 30, emptyMap(), null, false)!!, 1L)
+        store.record(ScreenTimeConfig.validated(2, 30, emptyMap())!!, 1L)
         val http = Http { done(304) }
         val now = 30L * 24 * 3_600_000
         assertEquals(DeviceConfigRunResult.Unchanged, runSuspend { runner(http, now).run() })
@@ -78,7 +78,7 @@ class DeviceConfigRunnerTest {
 
     @Test
     fun `retryable failures and refusals keep the cache untouched`() {
-        store.record(ScreenTimeConfig.validated(2, 30, emptyMap(), null, false)!!, 5L)
+        store.record(ScreenTimeConfig.validated(2, 30, emptyMap())!!, 5L)
         val offline = AuthedOutcome.NoToken(TokenUnavailable.Retry(RetryReason.Offline))
         val retry = listOf(done(503), done(429), done(401), offline)
         for (outcome in retry) assertEquals(DeviceConfigRunResult.Retry, runSuspend { runner(Http { outcome }).run() })
@@ -93,7 +93,7 @@ class DeviceConfigRunnerTest {
     @Test
     fun `not enrolled and disconnected stop the work and forget the rules`() {
         for (reason in listOf(TokenUnavailable.NotEnrolled, TokenUnavailable.Disconnected)) {
-            store.record(ScreenTimeConfig.validated(2, 30, emptyMap(), null, false)!!, 5L)
+            store.record(ScreenTimeConfig.validated(2, 30, emptyMap())!!, 5L)
             val http = Http { AuthedOutcome.NoToken(reason) }
             assertEquals(DeviceConfigRunResult.Stopped, runSuspend { runner(http).run() })
             assertNull(store.cached.value)

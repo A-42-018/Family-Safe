@@ -215,7 +215,7 @@ class AppStateHolderTest {
         )
         holder.state.test {
             assertEquals(null, awaitItem().screenTime)
-            rules.value = CachedScreenTimeConfig(ScreenTimeConfig.validated(3, 90, mapOf(6 to 180), null, false)!!, 7L)
+            rules.value = CachedScreenTimeConfig(ScreenTimeConfig.validated(3, 90, mapOf(6 to 180))!!, 7L)
             val withRules = awaitItem().screenTime!!
             assertEquals(3, withRules.config.version)
             assertEquals(90, withRules.config.limitFor(1))

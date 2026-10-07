@@ -47,7 +47,7 @@ class AppRuleCheckRunnerTest {
     }
 
     private fun cache(vararg rules: AppRule, version: Int = 2, validatedAt: Long = noon) = CachedScreenTimeConfig(
-        ScreenTimeConfig.validated(version, null, emptyMap(), null, false, rules.toList())!!,
+        ScreenTimeConfig.validated(version, null, emptyMap(), rules.toList())!!,
         validatedAt,
     )
 

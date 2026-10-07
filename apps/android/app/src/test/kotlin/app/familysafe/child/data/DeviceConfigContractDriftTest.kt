@@ -1,7 +1,10 @@
 package app.familysafe.child.data
 
+import app.familysafe.child.domain.ScheduleLimits
+import app.familysafe.child.domain.ScheduleType
 import app.familysafe.child.domain.ScreenTimeConfig
 import app.familysafe.child.domain.ScreenTimeLimits
+import app.familysafe.child.domain.TimezoneName
 import app.familysafe.child.testutil.RepoFiles
 import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -51,9 +54,13 @@ class DeviceConfigContractDriftTest {
             ),
             contract,
         )
-        // Phase 19a-2: `timezone` and `schedules` are on the wire but the DTO does not read them until Phase 19c
-        // (ignoreUnknownKeys keeps the shipped parser working). Remove this exclusion in 19c.
-        assertEquals(contract - setOf("timezone", "schedules"), serialNames("DeviceConfigDataDto"))
+        // The legacy bedtime/school keys stay on the wire until Phase 19d-1; the app no longer reads them
+        // (ignoreUnknownKeys). Remove LEGACY in 19d-1 together with the contract keys.
+        val legacy = setOf("bedtime_enabled", "bedtime_start", "bedtime_end", "school_mode_enabled")
+        assertEquals(contract - legacy, serialNames("DeviceConfigDataDto"))
+        val scheduleBody = ts.substring(ts.indexOf("export const scheduleSchema")).substringBefore(".strict()")
+        for (key in serialNames("ScheduleDto")) assertTrue(Regex("""\b$key:""").containsMatchIn(scheduleBody), key)
+        assertEquals(setOf("id", "name", "type", "days", "start_time", "end_time"), serialNames("ScheduleDto"))
     }
 
     @Test
@@ -64,7 +71,22 @@ class DeviceConfigContractDriftTest {
         val dtoNullable = Regex(
             """val (\w+): (?:String|Int)\?""",
         ).findAll(dtoSource.substringAfter("class DeviceConfigDataDto")).count()
-        assertEquals(nullable.size - 1, dtoNullable) // `timezone` is not in the DTO until Phase 19c
+        assertEquals(nullable.size - 2, dtoNullable) // the two legacy bedtime times are not read (until 19d-1)
+    }
+
+    @Test
+    fun `schedule limits and the time zone format match the contract`() {
+        assertEquals(ScheduleLimits.MAX.toLong(), number(ts, "SCHEDULES_MAX"))
+        assertEquals(ScheduleLimits.NAME_MAX.toLong(), number(ts, "SCHEDULE_NAME_MAX"))
+        assertEquals(ScheduleLimits.MINUTES_PER_DAY.toLong(), number(ts, "MINUTES_PER_DAY"))
+        assertEquals(ScheduleLimits.MINUTES_PER_WEEK.toLong(), number(ts, "MINUTES_PER_WEEK"))
+        val types = Regex("""SCHEDULE_TYPES = \[([^\]]+)]""").find(ts)!!.groupValues[1]
+            .split(",").map { it.trim().trim('"') }
+        assertEquals(types, ScheduleType.entries.map { it.name })
+        val pattern = Regex("""TIMEZONE_NAME_PATTERN = /(.+)/;""").find(ts)!!.groupValues[1]
+        assertEquals(pattern, TimezoneName.PATTERN_SOURCE)
+        assertTrue(ts.contains("value.length <= 64"))
+        assertEquals(64, TimezoneName.MAX_LENGTH)
     }
 
     @Test

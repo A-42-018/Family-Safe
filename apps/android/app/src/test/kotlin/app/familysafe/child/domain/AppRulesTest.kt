@@ -94,7 +94,7 @@ class AppRulesTest {
         val decoded = AppRuleList.decode("com.a.b=B,com.a.b=L5")!!
         assertEquals(2, decoded.size)
         assertNull(AppRuleList.validated(decoded))
-        assertNull(ScreenTimeConfig.validated(1, null, emptyMap(), null, false, decoded))
+        assertNull(ScreenTimeConfig.validated(1, null, emptyMap(), decoded))
     }
 
     @Test

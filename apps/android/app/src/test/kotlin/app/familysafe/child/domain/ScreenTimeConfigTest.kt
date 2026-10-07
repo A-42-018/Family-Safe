@@ -12,25 +12,52 @@ class ScreenTimeConfigTest {
         version: Int = 3,
         limit: Int? = 120,
         overrides: Map<Int, Int> = emptyMap(),
-        bedtime: BedtimeWindow? = null,
-        school: Boolean = false,
-    ) = ScreenTimeConfig.validated(version, limit, overrides, bedtime, school)
+        timezone: String? = null,
+        schedules: List<ScheduleWindow> = emptyList(),
+    ) = ScreenTimeConfig.validated(version, limit, overrides, emptyList(), timezone, schedules)
 
     private fun parse(
         version: Int = 3,
         limit: Int? = 120,
         overrides: Map<String, Int> = emptyMap(),
-        bedtimeEnabled: Boolean = false,
-        start: String? = null,
-        end: String? = null,
-        school: Boolean = false,
+        timezone: String? = null,
+        schedules: List<RawSchedule> = emptyList(),
         serverTime: String = "2026-10-01T09:30:00.000Z",
         interval: Int = 21_600,
     ) = ScreenTimeConfigParser.parse(
-        version, limit, overrides, bedtimeEnabled, start, end, school, emptyList(), serverTime, interval,
+        version,
+        limit,
+        overrides,
+        emptyList(),
+        timezone,
+        schedules,
+        serverTime,
+        interval,
     )
 
-    private val nightWindow = BedtimeWindow("21:30", "07:00")
+    private fun window(
+        id: Int,
+        type: String = "BEDTIME",
+        days: List<Int> = listOf(
+            1,
+            2,
+        ),
+        start: String = "21:30",
+        end: String = "07:00",
+    ) = ScheduleWindow.validated("00000000-0000-4000-8000-%012d".format(id), "Night mode", type, days, start, end)!!
+
+    private fun raw(
+        id: Int,
+        type: String = "BEDTIME",
+        days: List<Int> = listOf(
+            1,
+            2,
+        ),
+        start: String = "21:30",
+        end: String = "07:00",
+    ) = RawSchedule("00000000-0000-4000-8000-%012d".format(id), "Night mode", type, days, start, end)
+
+    private val nightWindow = window(1)
 
     // --- effective limit: same table as effectiveDailyLimitMinutes in the contracts ---
 
@@ -75,11 +102,17 @@ class ScreenTimeConfigTest {
         assertNull(config(overrides = mapOf(8 to 10)))
         assertNull(config(overrides = mapOf(1 to 1_441)))
         assertNull(config(overrides = mapOf(1 to -5)))
-        assertNull(config(bedtime = BedtimeWindow("22:00", "22:00")))
-        assertNull(config(bedtime = BedtimeWindow("24:00", "07:00")))
-        assertNull(config(bedtime = BedtimeWindow("9:00", "07:00")))
-        assertNull(config(bedtime = BedtimeWindow("21:60", "07:00")))
-        val edge = config(limit = 0, overrides = mapOf(1 to 0, 7 to 1_440), bedtime = BedtimeWindow("21:30", "07:00"))
+        for (zone in listOf("", "EST", "Mars", "posix/UTC", "SystemV/EST5", "utc", "Asia/Dhaka/A/B", "x".repeat(65))) {
+            assertNull(config(timezone = zone), zone)
+        }
+        assertNull(config(schedules = listOf(window(1), window(2)))) // same type, same time: overlap
+        assertNull(config(schedules = listOf(window(1), window(1, type = "SCHOOL")))) // duplicate id
+        val edge = config(
+            limit = 0,
+            overrides = mapOf(1 to 0, 7 to 1_440),
+            timezone = "Asia/Dhaka",
+            schedules = listOf(nightWindow, window(2, type = "SCHOOL")),
+        )
         assertNotNull(edge)
         assertNotNull(config(limit = 1_440, version = 1))
     }
@@ -92,7 +125,9 @@ class ScreenTimeConfigTest {
         assertEquals(a.hashCode(), b.hashCode())
         assertFalse(a == config(overrides = mapOf(1 to 11)))
         assertEquals("ScreenTimeConfig(v3)", a.toString())
-        assertEquals("BedtimeWindow", BedtimeWindow("21:00", "07:00").toString())
+        assertFalse(config(schedules = listOf(nightWindow))!!.toString().contains("Night"))
+        assertFalse(a == config(overrides = mapOf(1 to 10), timezone = "Asia/Dhaka"))
+        assertFalse(a == config(overrides = mapOf(1 to 10), schedules = listOf(nightWindow)))
         assertEquals("CachedScreenTimeConfig(v3)", CachedScreenTimeConfig(a, 5L).toString())
     }
 
@@ -102,16 +137,14 @@ class ScreenTimeConfigTest {
     fun `a valid body parses, with the server time`() {
         val p = parse(
             overrides = mapOf("6" to 180),
-            bedtimeEnabled = true,
-            start = "21:00",
-            end = "07:00",
-            school = true,
+            timezone = "Asia/Dhaka",
+            schedules = listOf(raw(1), raw(2, type = "SCHOOL", days = listOf(1), start = "08:00", end = "15:00")),
         )!!
         assertEquals(3, p.config.version)
         assertEquals(120, p.config.dailyLimitMinutes)
         assertEquals(mapOf(6 to 180), p.config.dayOverrides)
-        assertEquals(BedtimeWindow("21:00", "07:00"), p.config.bedtime)
-        assertTrue(p.config.schoolModeEnabled)
+        assertEquals("Asia/Dhaka", p.config.timezone)
+        assertEquals(listOf(ScheduleType.BEDTIME, ScheduleType.SCHOOL), p.config.schedules.map { it.type })
         assertEquals(1_790_847_000_000L, p.serverTimeEpochMillis)
     }
 
@@ -124,13 +157,17 @@ class ScreenTimeConfigTest {
     }
 
     @Test
-    fun `bedtime times must match the switch`() {
-        assertNull(parse(bedtimeEnabled = true, start = null, end = null))
-        assertNull(parse(bedtimeEnabled = true, start = "21:00", end = null))
-        assertNull(parse(bedtimeEnabled = true, start = "21:00", end = "21:00"))
-        assertNull(parse(bedtimeEnabled = false, start = "21:00", end = "07:00"))
-        assertNull(parse(bedtimeEnabled = false, start = "21:00", end = null))
-        assertNotNull(parse(bedtimeEnabled = false))
+    fun `schedules and the time zone are checked like the contract`() {
+        assertNotNull(parse(timezone = null, schedules = emptyList()))
+        assertNull(parse(timezone = "EST"))
+        assertNull(parse(schedules = listOf(raw(1, start = "22:00", end = "22:00"))))
+        assertNull(parse(schedules = listOf(raw(1, start = "24:00"))))
+        assertNull(parse(schedules = listOf(raw(1, days = listOf(2, 1)))))
+        assertNull(parse(schedules = listOf(raw(1, type = "NAP"))))
+        assertNull(parse(schedules = listOf(raw(1), raw(2)))) // same type overlap
+        assertNull(parse(schedules = listOf(raw(1), raw(1, type = "SCHOOL")))) // duplicate id
+        assertNull(parse(schedules = (1..ScheduleLimits.MAX + 1).map { raw(it, type = "CUSTOM", days = listOf(1)) }))
+        assertNotNull(parse(schedules = listOf(raw(1), raw(2, type = "SCHOOL"))))
     }
 
     @Test
@@ -186,7 +223,19 @@ class ScreenTimeConfigTest {
         val shapes = listOf(
             config(limit = null),
             config(limit = 0, overrides = mapOf(1 to 0, 7 to 1_440)),
-            config(limit = 90, overrides = mapOf(6 to 180, 3 to 30), bedtime = nightWindow, school = true),
+            config(
+                limit = 90,
+                overrides = mapOf(6 to 180, 3 to 30),
+                timezone = "Asia/Dhaka",
+                schedules = listOf(nightWindow),
+            ),
+            config(
+                limit = 90,
+                schedules = listOf(
+                    nightWindow,
+                    window(2, type = "SCHOOL", days = listOf(3), start = "08:00", end = "15:00"),
+                ),
+            ),
         )
         for (shape in shapes) {
             val cached = CachedScreenTimeConfig(shape!!, 1_700_000_000_000L)
@@ -203,44 +252,54 @@ class ScreenTimeConfigTest {
                 version = 4,
                 limit = 90,
                 overrides = mapOf(6 to 180, 3 to 30),
-                bedtime = nightWindow,
-                school = true,
+                timezone = "Asia/Dhaka",
+                schedules = listOf(nightWindow),
             )!!,
             42L,
         )
-        assertEquals("v2;42;4;90;3=30,6=180;21:30-07:00;1;", ScreenTimeConfigCodec.encode(cached))
+        assertEquals(
+            "v3;42;4;90;3=30,6=180;Asia/Dhaka;00000000-0000-4000-8000-000000000001~BEDTIME~1,2~21:30~07:00~Night+mode;",
+            ScreenTimeConfigCodec.encode(cached),
+        )
         val bare = CachedScreenTimeConfig(config(version = 1, limit = null)!!, 42L)
-        assertEquals("v2;42;1;;;;0;", ScreenTimeConfigCodec.encode(bare))
+        assertEquals("v3;42;1;;;;;", ScreenTimeConfigCodec.encode(bare))
     }
 
     @Test
     fun `codec rejects junk and anything validated would not allow`() {
+        val id = "00000000-0000-4000-8000-000000000001"
         val junk = listOf(
-            null, "", "yesterday", "v2;42;4;90;;;", "v2;0;4;90;;;0;", "v2;-5;4;90;;;0;", "v2;x;4;90;;;0;",
-            "v2;42;x;90;;;0;", "v2;42;0;90;;;0;", "v2;42;4;1441;;;0;", "v2;42;4;x;;;0;", "v2;42;4;90;9=10;;0;",
-            "v2;42;4;90;1=10,1=20;;0;", "v2;42;4;90;1;;0;", "v2;42;4;90;1=;;0;", "v2;42;4;90;;22:00-22:00;0;",
-            "v2;42;4;90;;21:00;0;", "v2;42;4;90;;21:00-07:00-08:00;0;", "v2;42;4;90;;;2;", "v2;42;4;90;;;true;",
-            "v2;42;4;90;;;0;;extra",
-            // app rules field: bad package, bad code, duplicate package, the child app itself, no restriction at all
-            "v2;42;4;90;;;0;x=B", "v2;42;4;90;;;0;com.a.b=X1", "v2;42;4;90;;;0;com.a.b=L",
-            "v2;42;4;90;;;0;com.a.b=L1441",
-            "v2;42;4;90;;;0;com.a.b=B,com.a.b=L5", "v2;42;4;90;;;0;app.familysafe.child=B",
-            // the pre-18c six-field form reads as no cache on purpose (full pull next time)
-            "42;4;90;3=30,6=180;21:30-07:00;1", "42;1;;;;0",
+            null, "", "yesterday", "v3;42;4;90;;;", "v3;0;4;90;;;;", "v3;-5;4;90;;;;", "v3;x;4;90;;;;",
+            "v3;42;x;90;;;;", "v3;42;0;90;;;;", "v3;42;4;1441;;;;", "v3;42;4;x;;;;", "v3;42;4;90;9=10;;;",
+            "v3;42;4;90;1=10,1=20;;;", "v3;42;4;90;1;;;", "v3;42;4;90;1=;;;", "v3;42;4;90;;;;;extra",
+            // time zone field
+            "v3;42;4;90;;EST;;", "v3;42;4;90;;Mars;;", "v3;42;4;90;;posix/UTC;;",
+            // schedule field: bad shapes, bad values, duplicate id, same-type overlap
+            "v3;42;4;90;;;bad;", "v3;42;4;90;;;$id~BEDTIME~1~21:30~07:00;", "v3;42;4;90;;;$id~NAP~1~21:30~07:00~n;",
+            "v3;42;4;90;;;$id~BEDTIME~2,1~21:30~07:00~n;", "v3;42;4;90;;;$id~BEDTIME~1~22:00~22:00~n;",
+            "v3;42;4;90;;;$id~BEDTIME~1~21:30~07:00~%ZZ;",
+            "v3;42;4;90;;;$id~BEDTIME~1~21:30~07:00~a|$id~SCHOOL~1~08:00~09:00~b;",
+            "v3;42;4;90;;;$id~BEDTIME~1~21:30~07:00~a|00000000-0000-4000-8000-000000000002~BEDTIME~1~22:00~23:00~b;",
+            // app rules field: bad package, bad code, duplicate package, the child app itself
+            "v3;42;4;90;;;;x=B", "v3;42;4;90;;;;com.a.b=X1", "v3;42;4;90;;;;com.a.b=L",
+            "v3;42;4;90;;;;com.a.b=L1441",
+            "v3;42;4;90;;;;com.a.b=B,com.a.b=L5", "v3;42;4;90;;;;app.familysafe.child=B",
+            // the older forms read as no cache on purpose (full pull next time)
+            "v2;42;4;90;;;0;", "v2;42;4;90;3=30,6=180;21:30-07:00;1;", "42;4;90;3=30,6=180;21:30-07:00;1", "42;1;;;;0",
         )
         for (text in junk) assertNull(ScreenTimeConfigCodec.decode(text), text.toString())
     }
 
     @Test
-    fun `codec round-trips app rules in the v2 string`() {
+    fun `codec round-trips app rules in the v3 string`() {
         val rules = listOf(
             AppRule.validated("com.example.game", true, null)!!,
             AppRule.validated("com.example.video", false, 45)!!,
             AppRule.validated("com.example.chat", true, 60)!!,
         )
-        val shape = ScreenTimeConfig.validated(7, 90, emptyMap(), null, false, rules)!!
+        val shape = ScreenTimeConfig.validated(7, 90, emptyMap(), rules)!!
         val text = ScreenTimeConfigCodec.encode(CachedScreenTimeConfig(shape, 42L))
-        assertEquals("v2;42;7;90;;;0;com.example.chat=B60,com.example.game=B,com.example.video=L45", text)
+        assertEquals("v3;42;7;90;;;;com.example.chat=B60,com.example.game=B,com.example.video=L45", text)
         val back = ScreenTimeConfigCodec.decode(text)!!
         assertEquals(shape, back.config)
         assertEquals(setOf("com.example.chat", "com.example.game"), back.config.blockedPackages)
@@ -249,6 +308,22 @@ class ScreenTimeConfigTest {
     @Test
     fun `a pre-18c six-field cache is no cache`() {
         assertNull(ScreenTimeConfigCodec.decode("1700000000000;4;90;3=30,6=180;21:30-07:00;1"))
+    }
+
+    @Test
+    fun `a parent-typed name with separators survives the cache`() {
+        val name = "A;B|C~D,E=F 100% \u00e9\u09ac"
+        val w = ScheduleWindow.validated(
+            "00000000-0000-4000-8000-000000000009",
+            name,
+            "CUSTOM",
+            listOf(3),
+            "10:00",
+            "11:00",
+        )!!
+        val shape = config(schedules = listOf(w))!!
+        val back = ScreenTimeConfigCodec.decode(ScreenTimeConfigCodec.encode(CachedScreenTimeConfig(shape, 9L)))!!
+        assertEquals(name, back.config.schedules.single().name)
     }
 
     // --- policy ---

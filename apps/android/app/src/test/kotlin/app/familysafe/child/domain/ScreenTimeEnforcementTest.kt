@@ -17,7 +17,7 @@ class ScreenTimeEnforcementTest {
     private val hour = 3_600_000L
 
     private fun config(limit: Int? = 60, overrides: Map<Int, Int> = emptyMap()) =
-        ScreenTimeConfig.validated(5, limit, overrides, null, false)!!
+        ScreenTimeConfig.validated(5, limit, overrides)!!
 
     private fun cached(config: ScreenTimeConfig = config(), validatedAt: Long = noon) =
         CachedScreenTimeConfig(config, validatedAt)

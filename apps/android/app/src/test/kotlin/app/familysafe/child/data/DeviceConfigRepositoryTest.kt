@@ -20,7 +20,7 @@ class DeviceConfigRepositoryTest {
         }
     }
 
-    private val cached = ScreenTimeConfig.validated(2, 60, emptyMap(), null, false)!!
+    private val cached = ScreenTimeConfig.validated(2, 60, emptyMap())!!
     private fun completed(status: Int, body: String = "", retryAfter: String? = null) =
         AuthedOutcome.Completed(RawResponse(status, body, retryAfter))
 

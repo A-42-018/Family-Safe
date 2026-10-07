@@ -19,7 +19,7 @@ class AppRuleEnforcementTest {
     private fun rule(pkg: String, blocked: Boolean, limit: Int? = null) = AppRule.validated(pkg, blocked, limit)!!
 
     private fun config(vararg rules: AppRule, version: Int = 5) =
-        ScreenTimeConfig.validated(version, null, emptyMap(), null, false, rules.toList())!!
+        ScreenTimeConfig.validated(version, null, emptyMap(), rules.toList())!!
 
     private fun cached(config: ScreenTimeConfig, validatedAt: Long = noon) = CachedScreenTimeConfig(config, validatedAt)
 
