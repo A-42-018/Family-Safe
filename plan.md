@@ -3,9 +3,11 @@
 Full history of Phases 1–19b: `docs/PLAN_ARCHIVE.md` (grep it, never read it whole). Roadmap briefs: `docs/DEVELOPMENT_PLAN.md` (read only your own `### <id>` section; new M0/T-briefs are at its top). Master requirements: `prompt.md`.
 
 ## Current status
-**Last finished:** 19b — Schedules, web. **Plan v2 (2026-10-07):** roadmap regrouped into 9 demoable milestones (M0–M8), ~85 sessions in total (8 merges offset by 6 new), MVP reachable in ~36. No source code changed.
 **Repo:** https://github.com/A-42-018/Family-Safe (branch `main`) — commit + push after every sub-phase, then ZIP.
-**Next step:** M0-2 — walking skeleton (needs Docker + Supabase CLI + emulator; ask before installing), then M1.
+**Done and verified (CI green unless noted):** M0 (H1a/b, H2a–c, M0-1), M1 (19c-1…3, 19d, T1–T4), M2 (20c-1, 29a–d, 30a/b, 32a), M3 so far: 20a-1 (SQL), 20a-2 (Edge), 20a-3 (FCM sender + `commands-dispatch`).
+**State at this ZIP:** the last pushed commits (32a, 20a-1…3) were red in CI's database job only because of a test fixture in `21_retention` (ran after the seed; fixed by starting from an empty tree). The fix and the new local DB verifier (`npm run test:db:local`, 1336 assertions pass locally) are in this ZIP; **CI not yet re-checked after it.**
+**Next step:** confirm CI green, then 20b-1…3 (Android FCM: Firebase dependency + token registration + command executor), 20c-2 (web "Refresh device now"), then M4 location (21a-1 …).
+**Not done on purpose / needs you:** M0-2 end-to-end run (needs Docker + Supabase CLI + an emulator system image), Firebase project + `google-services.json` + `FCM_SERVICE_ACCOUNT_JSON`/`CRON_SECRET` secrets, enabling pg_cron, Device Owner behaviour on a real device (T3 is unit-tested only).
 
 ## Verified 2026-10-07 (real toolchains, macOS, Node 22.12, Deno 2.9.6)
 | Check | Result |
