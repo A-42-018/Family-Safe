@@ -1,5 +1,5 @@
 begin;
-select plan(133);
+select plan(136);
 
 -- Fixture: family A (A1 ENROLLED service path + RPC cap, A2 REVOKED, A3 PENDING (service cap), A4 ENROLLED parent RPC path,
 -- A5 ENROLLED parent direct-write path) and family B (B1 ENROLLED: read ordering + the daily event cap)
@@ -94,22 +94,25 @@ set local role authenticated;
 select results_eq($$select o_outcome, o_config_version from public.parent_set_app_rule('d0000000-0000-4000-8000-0000000000a4','com.example.youtube',true,null)$$, $$values ('updated'::text, 2)$$, 'a new block -> updated, version 2');
 reset role;
 select results_eq($$select package_name, app_name, blocked, daily_limit_minutes from public.app_rules where device_id='d0000000-0000-4000-8000-0000000000a4'$$, $$values ('com.example.youtube'::text, 'YouTube'::text, true, null::int)$$, 'the rule is stored with the reported label');
-select results_eq($$select action, parent_id, metadata -> 'fields', ip_address from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4'$$, $$values ('RULE_CHANGED'::text, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid, '["app_rules"]'::jsonb, null::inet)$$, 'RULE_CHANGED is audited with the field name only');
+select results_eq($$select action, parent_id, metadata -> 'fields', ip_address from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4' and action='RULE_CHANGED'$$, $$values ('RULE_CHANGED'::text, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid, '["app_rules"]'::jsonb, null::inet)$$, 'RULE_CHANGED is audited with the field name only');
 select is((select count(*)::int from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4' and metadata::text ~* 'example|youtube'), 0, 'the audit row holds no package name');
+select results_eq($$select action, metadata -> 'fields' from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4' and action='APP_BLOCKED'$$, $$values ('APP_BLOCKED'::text, '["blocked"]'::jsonb)$$, 'the block is audited as APP_BLOCKED with the field name only');
 select is((select count(*)::int from public.device_commands where device_id='d0000000-0000-4000-8000-0000000000a4' and command_type='SYNC_CONFIG' and status='PENDING'), 1, 'one PENDING SYNC_CONFIG was queued');
 set local role authenticated;
 select results_eq($$select o_outcome, o_config_version from public.parent_set_app_rule('d0000000-0000-4000-8000-0000000000a4','com.example.youtube',true,null)$$, $$values ('unchanged'::text, 2)$$, 'identical input -> unchanged, same version');
 reset role;
-select results_eq($$select (select count(*)::int from public.device_commands where device_id='d0000000-0000-4000-8000-0000000000a4'), (select count(*)::int from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4')$$, $$values (1, 1)$$, 'unchanged -> no new command, no new audit row');
+select results_eq($$select (select count(*)::int from public.device_commands where device_id='d0000000-0000-4000-8000-0000000000a4'), (select count(*)::int from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4')$$, $$values (1, 2)$$, 'unchanged -> no new command, no new audit row (RULE_CHANGED + APP_BLOCKED from the first block)');
 set local role authenticated;
 select results_eq($$select o_outcome, o_config_version from public.parent_set_app_rule('d0000000-0000-4000-8000-0000000000a4','com.example.youtube',false,30)$$, $$values ('updated'::text, 3)$$, 'unblock with a limit -> updated, version 3');
 reset role;
 select results_eq($$select blocked, daily_limit_minutes from public.app_rules where device_id='d0000000-0000-4000-8000-0000000000a4' and package_name='com.example.youtube'$$, $$values (false, 30)$$, 'the limit is stored');
-select results_eq($$select (select count(*)::int from public.device_commands where device_id='d0000000-0000-4000-8000-0000000000a4'), (select count(*)::int from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4')$$, $$values (1, 2)$$, 'a PENDING command dedupes; every change is audited');
+select results_eq($$select (select count(*)::int from public.device_commands where device_id='d0000000-0000-4000-8000-0000000000a4'), (select count(*)::int from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4')$$, $$values (1, 4)$$, 'a PENDING command dedupes; every change is audited (RULE_CHANGED + APP_UNBLOCKED added)');
+select is((select count(*)::int from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4' and action='APP_UNBLOCKED'), 1, 'the unblock is audited as APP_UNBLOCKED');
 set local role authenticated;
 select results_eq($$select o_outcome, o_config_version from public.parent_set_app_rule('d0000000-0000-4000-8000-0000000000a4','com.example.youtube',false,null)$$, $$values ('cleared'::text, 4)$$, 'no block and no limit -> the rule is deleted (cleared, version 4)');
 reset role;
 select is((select count(*)::int from public.app_rules where device_id='d0000000-0000-4000-8000-0000000000a4'), 0, 'a cleared rule leaves no row behind');
+select is((select count(*)::int from public.audit_logs where device_id='d0000000-0000-4000-8000-0000000000a4' and action in ('APP_BLOCKED','APP_UNBLOCKED')), 2, 'clearing an already unblocked rule adds no APP_BLOCKED / APP_UNBLOCKED row');
 set local role authenticated;
 select results_eq($$select o_outcome, o_config_version from public.parent_set_app_rule('d0000000-0000-4000-8000-0000000000a4','com.example.youtube',false,null)$$, $$values ('unchanged'::text, 4)$$, 'clearing a rule that does not exist -> unchanged');
 select results_eq($$select o_outcome, o_config_version from public.parent_set_app_rule('d0000000-0000-4000-8000-0000000000a4','com.example.game',false,0)$$, $$values ('updated'::text, 5)$$, 'a limit of 0 minutes is a rule (version 5)');
@@ -258,7 +261,7 @@ select results_eq($$select o_outcome, o_recorded, o_ignored from public.device_r
 
 -- side effects --------------------------------------------------------------------------------------------------------------------------------
 select results_eq($$select last_seen_at is null, device_status from public.devices where id='d0000000-0000-4000-8000-0000000000b1'$$, $$select last_seen_at is null, device_status from public.devices where id='d0000000-0000-4000-8000-0000000000a5'$$, 'attempts do not touch liveness columns');
-select is((select count(*)::int from public.audit_logs where action <> 'RULE_CHANGED'), 0, 'attempts write no audit row');
+select is((select count(*)::int from public.audit_logs where action not in ('RULE_CHANGED','APP_BLOCKED','APP_UNBLOCKED')), 0, 'attempts write no audit row');
 select is((select count(*)::int from public.device_commands where device_id='d0000000-0000-4000-8000-0000000000b1'), 1, 'attempts queue no command (only the rule change did)');
 
 select * from finish();
