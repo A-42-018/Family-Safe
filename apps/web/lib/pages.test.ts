@@ -608,3 +608,29 @@ describe("Phase 19b schedules web", () => {
     expect(dash).not.toMatch(FORBIDDEN);
   });
 });
+
+describe("Phase 20c-1 activity page", () => {
+  const src = (p: string) => read(`${root}${p}`);
+  const page = src("app/(app)/devices/[id]/activity/page.tsx");
+
+  it("page validates the id, answers 404 via RLS, renders the card and refreshes", () => {
+    expect(page).toContain("isUuid(id)");
+    expect(page).toMatch(/notFound\(\)/);
+    expect(page).toContain("<ActivityCard");
+    expect(page).toContain("<AutoRefresh");
+    expect(page).toContain("<BreadcrumbLabel");
+    expect(page).not.toMatch(/supabase|fetch\(|localStorage|sessionStorage|console\.|dangerouslySetInnerHTML/i);
+  });
+  it("the read side is SELECT only and the card has no controls that write", () => {
+    const queries = src("lib/activity/queries.ts");
+    expect(queries).not.toMatch(/\.(insert|update|upsert|delete|rpc)\(/);
+    expect(queries).not.toMatch(/console\.|dangerouslySetInnerHTML/);
+    const card = src("components/devices/activity-card.tsx");
+    expect(card).toContain('data-testid="activity-card"');
+    expect(card).not.toMatch(/"use client"|<form|<button|onClick|dangerouslySetInnerHTML|supabase/i);
+  });
+  it("raw event metadata is never rendered", () => {
+    expect(src("components/devices/activity-card.tsx")).not.toMatch(/metadata/);
+    expect(src("lib/activity/activity.ts")).not.toMatch(/JSON\.stringify/);
+  });
+});
