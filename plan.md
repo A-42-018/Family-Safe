@@ -4,14 +4,15 @@ Full history of Phases 1–19b: `docs/PLAN_ARCHIVE.md` (grep it, never read it w
 
 ## Current status
 **Last finished:** 19b — Schedules, web. **Plan v2 (2026-10-07):** roadmap regrouped into 9 demoable milestones (M0–M8), ~85 sessions in total (8 merges offset by 6 new), MVP reachable in ~36. No source code changed.
-**Next step:** **M0-1 — put the repo in git + GitHub so CI runs pgTAP and Gradle** (CI already defines both jobs), then H2a.
+**Repo:** https://github.com/A-42-018/Family-Safe (branch `main`) — commit + push after every sub-phase, then ZIP.
+**Next step:** read the first CI run (database + android jobs) → H1a (pgTAP fixes) / H2a (Kotlin compile fixes).
 
 ## Verified 2026-10-07 (real toolchains, macOS, Node 22.12, Deno 2.9.6)
 | Check | Result |
 |---|---|
 | `npm run check` | ✅ structure + secrets OK |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm run lint` | ✅ 0 errors, 1 warning (unused `eslint-disable` in `apps/web/lib/schedules/schedules.ts:42`) |
+| `npm run lint` | ✅ 0 errors, 0 warnings (after M0-1) |
 | `npm run test:contracts` | ✅ 312 / 312 (11 files) |
 | `npm run test:web` | ✅ 618 / 618 (39 files) |
 | `npm run build:web` | ✅ 29 routes |
@@ -54,7 +55,7 @@ Full history of Phases 1–19b: `docs/PLAN_ARCHIVE.md` (grep it, never read it w
 | 16a–19b | usage, screen-time rules, app restrictions, schedules SQL/Edge/web (web + Edge + contracts verified 2026-10-07; pgTAP 13–15 + Kotlin not run) |
 
 ## Open carry-over
-Read receipt ("device applied vN") → 20a-1 · limit-reached event → 29d · legacy `bedtime_*`/`school_mode_enabled` → 19d · offline sweep → 32a · in-memory limiters → 31a · no QR image → 27a · no self-service unenroll → 32d · refresh expiry slides forever → 31b-1 · audit IP is web-supplied → 31b-2 · CI `deno test` list misses `device-usage`, `device-config`, `device-app-events` → M0-1.
+Read receipt ("device applied vN") → 20a-1 · limit-reached event → 29d · legacy `bedtime_*`/`school_mode_enabled` → 19d · offline sweep → 32a · in-memory limiters → 31a · no QR image → 27a · no self-service unenroll → 32d · refresh expiry slides forever → 31b-1 · audit IP is web-supplied → 31b-2.
 
 ## Roadmap v2 — milestones
 Each milestone is a vertical, demoable slice. Sub-phase IDs and briefs are unchanged from v1 unless marked **NEW** or **merged** (`a+b` = one session). Layer: V · SQL · EDGE · WEB · A-DOM · A-DATA · A-UI · DOC. Status: ☐ todo · ◐ code complete, unverified · ☑ verified.
@@ -67,7 +68,7 @@ Each milestone is a vertical, demoable slice. Sub-phase IDs and briefs are uncha
 |---|---|---|---|---|
 | H1b | V | npm ci, typecheck, lint, vitest, next build | M | ☑ 2026-10-07 |
 | H1a | V | contracts ☑ + Deno ☑ done; **pgTAP remains** (via CI or local Postgres+pgTAP) | S | ◐ |
-| M0-1 | V | **NEW** git init + GitHub + push; fix CI Deno test list; fix lint warning; CI 5 jobs visible | S | ☐ |
+| M0-1 | V | **NEW** git init + GitHub + push; fix CI Deno test list; fix lint warning; CI 5 jobs visible | S | ◐ pushed; CI results pending |
 | H2a | V | first Gradle compile; fix compile errors (may need H2a-b, H2a-c) | M | ☐ |
 | H2b | V | JVM unit + drift tests | M | ☐ |
 | H2c | V | ktlint, Android lint, manifest guard | S | ☐ |
@@ -136,5 +137,6 @@ Map provider suggestion for 21c-2 (confirm with research): MapLibre GL / Leaflet
 6. In-memory limiters are per Edge isolate → effectively off in production until 31a.
 
 ## Phase log (latest)
+- **M0-1 (2026-10-07)** — repo on GitHub (`A-42-018/Family-Safe`, `main`): baseline commit of 19b + plan v2, then CI `deno test` step now covers all 13 functions (was missing `device-usage`, `device-config`, `device-app-events`) and the unused `eslint-disable` in `lib/schedules/schedules.ts` removed (lint 0 warnings). Status ◐ until the first CI run's database + android jobs are read.
 - **Plan v2 (2026-10-07)** — ran the web/contracts/Deno toolchains for real (all green, numbers above); H1b ☑, H1a ◐ (pgTAP left). Roadmap regrouped into milestones M0–M8 with demo gates and an MVP cut line; Track B (Device Owner) T1–T4 added; 20c-1, 30a/b, 29a–d, 32a moved earlier; 8 S-sized pairs merged; 33a pulled into M0-2; git + CI made the verification source of truth. No source code changed.
 - **Roadmap reset after 19b** — plan.md slimmed, remaining phases split into one-layer sub-phases, verification phases H1/H2 added.

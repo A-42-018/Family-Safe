@@ -17,7 +17,7 @@ jobs:
         with: { deno-version: v2.x }
       - run: deno check --no-config --import-map=deno.json health/index.ts auth-events/index.ts enrollment-create/index.ts enrollment-redeem/index.ts device-revoke/index.ts device-refresh/index.ts device-heartbeat/index.ts device-info/index.ts device-permissions/index.ts device-apps/index.ts device-usage/index.ts device-config/index.ts device-app-events/index.ts
         working-directory: supabase/functions
-      - run: deno test --no-config --import-map=deno.json --allow-env _shared/ health/ auth-events/ enrollment-create/ enrollment-redeem/ device-revoke/ device-refresh/ device-heartbeat/ device-info/ device-permissions/ device-apps/
+      - run: deno test --no-config --import-map=deno.json --allow-env _shared/ health/ auth-events/ enrollment-create/ enrollment-redeem/ device-revoke/ device-refresh/ device-heartbeat/ device-info/ device-permissions/ device-apps/ device-usage/ device-config/ device-app-events/
         working-directory: supabase/functions
   web:
     runs-on: ubuntu-latest

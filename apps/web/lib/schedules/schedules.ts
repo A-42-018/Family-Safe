@@ -39,7 +39,6 @@ const HHMM = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 /** PostgREST returns `time` as `HH:MM:SS`; the editor works with minute resolution. */
 const clock = (v: unknown): string | null => (typeof v === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/.test(v) ? v.slice(0, 5) : null);
 const isType = (v: unknown): v is ScheduleType => typeof v === "string" && (SCHEDULE_TYPES as readonly string[]).includes(v);
-// eslint-disable-next-line no-control-regex -- control characters are exactly what the name check rejects (mirrors the contract and SQL)
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/;
 
 /** A raw `schedules` row → `ScheduleRow`; anything unusable → null (skipped, never invented). */
