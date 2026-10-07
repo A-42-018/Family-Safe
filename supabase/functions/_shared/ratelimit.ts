@@ -57,6 +57,8 @@ export const RULES = {
   deviceConfigIp: { name: "device-config-ip", limit: 60, windowSeconds: 300 }, // per IP, pre-auth
   deviceAppEvents: { name: "device-app-events", limit: 30, windowSeconds: 3600 }, // per device (after auth); small batches, throttled per package on the device
   deviceAppEventsIp: { name: "device-app-events-ip", limit: 60, windowSeconds: 300 }, // per IP, pre-auth
+  deviceLimitEvents: { name: "device-limit-events", limit: 6, windowSeconds: 3600 }, // per device (after auth); one real report per day + retries
+  deviceLimitEventsIp: { name: "device-limit-events-ip", limit: 60, windowSeconds: 300 }, // per IP, pre-auth
   location: { name: "location", limit: 60, windowSeconds: 900 },
   commands: { name: "commands", limit: 30, windowSeconds: 60 },
 } satisfies Record<string, RateLimitRule>;
