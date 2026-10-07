@@ -69,4 +69,32 @@ class ManagedModeGuardTest {
         val banned = Regex("""Log\.|println|Timber|printStackTrace|bearerAuth|Authorization|HttpClient""")
         files.forEach { assertFalse(banned.containsMatchIn(src(it)), "$it must stay quiet") }
     }
+
+    @Test
+    fun `enforcement runs on every trigger, in the background only while managed, and releases on disconnect`() {
+        val container = src("di/AppContainer.kt")
+        // config collector + foreground refresh + resume + the background pass (definition excluded)
+        assertEquals(4, Regex("""\breconcileEnforcement\(\)""").findAll(container).count() - 1)
+        assertTrue(container.contains("enforcementRunner.releaseAll()"))
+        assertTrue(container.contains("workScheduler.cancelEnforcement()"))
+        assertTrue(container.contains("enforcementRunner.isManaged()"))
+        val body = RepoFiles.read("$base/work/WorkScheduler.kt").substringAfter("fun ensureEnforcement")
+            .substringBefore("fun cancelEnforcement")
+        assertFalse(body.contains("networkConstraints"))
+        assertTrue(src("work/EnforcementWorker.kt").contains("runBackgroundChecks()"))
+    }
+
+    @Test
+    fun `the enforcement files never log, store outside the paused list or reach the network`() {
+        val files = listOf(
+            "domain/Enforcement.kt",
+            "data/SuspendedPackagesStore.kt",
+            "work/EnforcementRunner.kt",
+            "work/EnforcementWorker.kt",
+        )
+        val banned =
+            Regex("""Log\.|println|Timber|printStackTrace|bearerAuth|Authorization|HttpClient|Ktor|DeviceHttp""")
+        files.forEach { assertFalse(banned.containsMatchIn(src(it)), "$it must stay local and quiet") }
+        assertFalse(src("domain/Enforcement.kt").contains("android."))
+    }
 }

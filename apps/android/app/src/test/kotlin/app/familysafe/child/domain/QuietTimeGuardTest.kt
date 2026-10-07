@@ -56,11 +56,11 @@ class QuietTimeGuardTest {
     @Test
     fun `the schedules are re-checked on resume, on every tick, on a rules change and after a boundary`() {
         val container = RepoFiles.read("$kt/di/AppContainer.kt")
-        // definition + the config collector + the foreground refresh + resume
-        assertEquals(4, Regex("""\bcheckSchedules\(\)""").findAll(container).count())
+        // definition + the config collector + the foreground refresh + resume + the background pass
+        assertEquals(5, Regex("""\bcheckSchedules\(\)""").findAll(container).count())
         assertTrue(container.contains("ScheduleStatusStore()"))
         assertTrue(container.contains("workScheduler.cancelScheduleBoundary()"))
-        assertTrue(RepoFiles.read("$kt/work/ScheduleBoundaryWorker.kt").contains("container.checkSchedules()"))
+        assertTrue(RepoFiles.read("$kt/work/ScheduleBoundaryWorker.kt").contains("container.runBackgroundChecks()"))
         assertTrue(RepoFiles.read("$kt/MainActivity.kt").contains("container.refreshLimitStatus()"))
     }
 

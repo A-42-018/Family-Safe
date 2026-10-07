@@ -6,12 +6,12 @@ import androidx.work.WorkerParameters
 import app.familysafe.child.FamilySafeApp
 
 /**
- * One-off job that runs shortly after a schedule starts or ends: it re-checks the schedules (memory only) and arms
- * the next one. No network, no exact alarm, no notification; WorkManager may run it late. Not exported.
+ * One-off job that runs shortly after a schedule starts or ends: it re-checks limits and schedules (memory only), applies
+ * managed mode when it is on, and arms the next one. No network, no exact alarm, no notification; WorkManager may run it late. Not exported.
  */
 class ScheduleBoundaryWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        (applicationContext as FamilySafeApp).container.checkSchedules()
+        (applicationContext as FamilySafeApp).container.runBackgroundChecks()
         return Result.success()
     }
 }

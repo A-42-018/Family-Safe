@@ -183,6 +183,19 @@ class WorkScheduler(private val context: Context) {
         workManager.enqueueUniqueWork(SCHEDULE_BOUNDARY_WORK, ExistingWorkPolicy.REPLACE, request)
     }
 
+    /**
+     * Managed mode only: every 15 minutes (WorkManager's minimum) re-checks and applies the pause list. No network.
+     * Idempotent (KEEP). Never scheduled on a normal phone.
+     */
+    fun ensureEnforcement() {
+        val request = PeriodicWorkRequestBuilder<EnforcementWorker>(ENFORCEMENT_MINUTES, TimeUnit.MINUTES).build()
+        workManager.enqueueUniquePeriodicWork(ENFORCEMENT_WORK, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
+    fun cancelEnforcement() {
+        workManager.cancelUniqueWork(ENFORCEMENT_WORK)
+    }
+
     fun cancelScheduleBoundary() {
         workManager.cancelUniqueWork(SCHEDULE_BOUNDARY_WORK)
     }
@@ -204,6 +217,8 @@ class WorkScheduler(private val context: Context) {
         const val DEVICE_CONFIG_NOW_WORK = "device-config-now"
         const val APP_ATTEMPTS_NOW_WORK = "app-attempts-now"
         const val SCHEDULE_BOUNDARY_WORK = "schedule-boundary"
+        const val ENFORCEMENT_WORK = "enforcement"
+        private const val ENFORCEMENT_MINUTES = 15L
         private const val BACKOFF_MINUTES = 1L
     }
 }

@@ -12,6 +12,8 @@ import app.familysafe.child.data.AndroidDeviceDetailsSource
 import app.familysafe.child.data.AndroidDeviceInfoProvider
 import app.familysafe.child.data.AndroidHeartbeatPayloadSource
 import app.familysafe.child.data.AndroidInstalledAppsSource
+import app.familysafe.child.data.AndroidManagedModeDetector
+import app.familysafe.child.data.AndroidPackageSuspender
 import app.familysafe.child.data.AndroidPermissionProbe
 import app.familysafe.child.data.AndroidUsageAccessProbe
 import app.familysafe.child.data.AndroidUsageStatsSource
@@ -26,6 +28,7 @@ import app.familysafe.child.data.DeviceConfigRepository
 import app.familysafe.child.data.DeviceConfigStore
 import app.familysafe.child.data.DeviceInfoReportStore
 import app.familysafe.child.data.DeviceInfoRepository
+import app.familysafe.child.data.EnforcementStatusStore
 import app.familysafe.child.data.EnrollmentApi
 import app.familysafe.child.data.EnrollmentRepository
 import app.familysafe.child.data.HeartbeatRepository
@@ -42,6 +45,7 @@ import app.familysafe.child.data.ScheduleStatusStore
 import app.familysafe.child.data.SealedSecureStore
 import app.familysafe.child.data.SecureStore
 import app.familysafe.child.data.SharedPrefsBlobStorage
+import app.familysafe.child.data.SuspendedPackagesStore
 import app.familysafe.child.data.SyncStatusStore
 import app.familysafe.child.data.TokenProvider
 import app.familysafe.child.data.UsageAccessStore
@@ -49,11 +53,14 @@ import app.familysafe.child.data.UsageReportStore
 import app.familysafe.child.data.UsageRepository
 import app.familysafe.child.domain.AppInventoryPolicy
 import app.familysafe.child.domain.AppInventorySanitizer
+import app.familysafe.child.domain.ConsumerEnforcer
 import app.familysafe.child.domain.DeviceDetails
 import app.familysafe.child.domain.DeviceDetailsSource
 import app.familysafe.child.domain.DeviceInfoPolicy
+import app.familysafe.child.domain.EnforcementInputs
 import app.familysafe.child.domain.HeartbeatPolicy
 import app.familysafe.child.domain.InstalledAppsSource
+import app.familysafe.child.domain.ManagedEnforcer
 import app.familysafe.child.domain.PermissionSyncPolicy
 import app.familysafe.child.domain.ScheduleBoundary
 import app.familysafe.child.domain.ScreenTimeConfigPolicy
@@ -65,6 +72,7 @@ import app.familysafe.child.work.AppInventoryRunner
 import app.familysafe.child.work.AppRuleCheckRunner
 import app.familysafe.child.work.DeviceConfigRunner
 import app.familysafe.child.work.DeviceInfoRunner
+import app.familysafe.child.work.EnforcementRunner
 import app.familysafe.child.work.HeartbeatRunner
 import app.familysafe.child.work.LimitCheckRunner
 import app.familysafe.child.work.PermissionSyncRunner
@@ -234,6 +242,34 @@ class AppContainer(private val context: Context) {
         ScheduleCheckRunner(rules = { deviceConfigStore.cached.value }, status = scheduleStatusStore)
     }
 
+    /** What enforcement did last (memory only) and the packages managed mode paused (sealed, so a restart can resume them). */
+    val enforcementStatusStore: EnforcementStatusStore by lazy { EnforcementStatusStore() }
+    private val suspendedPackagesStore: SuspendedPackagesStore by lazy { SuspendedPackagesStore(secureStore) }
+
+    /**
+     * Track A informs (the notices are the enforcement); managed mode (Device Owner, opt-in) also pauses the apps the
+     * parent restricted. Local only: no network. See docs/ANDROID_PERMISSIONS.md "Track B decision".
+     */
+    val enforcementRunner: EnforcementRunner by lazy {
+        EnforcementRunner(
+            detector = AndroidManagedModeDetector(context),
+            consumer = ConsumerEnforcer(),
+            managed = ManagedEnforcer(AndroidPackageSuspender(context), suspendedPackagesStore),
+            inputs = {
+                val now = System.currentTimeMillis()
+                EnforcementInputs(
+                    config = deviceConfigStore.cached.value?.activeConfig(now),
+                    appRules = appRuleStatusStore.status.value,
+                    limit = limitStatusStore.status.value,
+                    schedules = scheduleStatusStore.status.value,
+                    installed = appInventoryReportStore.report.value?.inventory?.apps.orEmpty(),
+                )
+            },
+            status = enforcementStatusStore,
+            onNotManaged = { suspendedPackagesStore.clear() },
+        )
+    }
+
     val appAttemptRunner: AppAttemptRunner by lazy {
         AppAttemptRunner(repository = AppAttemptRepository(deviceHttp), store = appAttemptStore)
     }
@@ -288,6 +324,8 @@ class AppContainer(private val context: Context) {
                         workScheduler.cancelDeviceConfig()
                         workScheduler.cancelAppAttempts()
                         workScheduler.cancelScheduleBoundary()
+                        workScheduler.cancelEnforcement()
+                        enforcementRunner.releaseAll()
                     }
                 }
             } catch (e: CancellationException) {
@@ -305,6 +343,7 @@ class AppContainer(private val context: Context) {
                     limitCheckRunner.check()
                     appRuleCheckRunner.check()
                     checkSchedules()
+                    reconcileEnforcement()
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -325,6 +364,7 @@ class AppContainer(private val context: Context) {
                 limitCheckRunner.check()
                 appRuleCheckRunner.check()
                 checkSchedules()
+                reconcileEnforcement()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -350,6 +390,25 @@ class AppContainer(private val context: Context) {
     }
 
     /**
+     * Applies the plan for the current limits, rules and schedules: managed mode pauses and resumes apps, every other
+     * phone only informs. Also keeps the 15-minute background pass scheduled while managed and enrolled, and cancels it
+     * otherwise. Local only; best effort.
+     */
+    fun reconcileEnforcement() {
+        enforcementRunner.run()
+        val managed = enforcementRunner.isManaged() && HeartbeatPolicy.shouldRun(appState.state.value)
+        if (managed) workScheduler.ensureEnforcement() else workScheduler.cancelEnforcement()
+    }
+
+    /** Everything the foreground does on a tick, for the background jobs: limits, app rules, schedules, enforcement. */
+    fun runBackgroundChecks() {
+        limitCheckRunner.check()
+        appRuleCheckRunner.check()
+        checkSchedules()
+        reconcileEnforcement()
+    }
+
+    /**
      * Called when the app comes to the foreground: re-reads the OS permission state (no prompt) so the Permissions
      * screen is current, and queues one extra sync when the state changed, nothing was acknowledged yet, or the
      * last acknowledged sync is stale. Also checks (at most every 15 minutes) whether the app list changed, and
@@ -371,6 +430,7 @@ class AppContainer(private val context: Context) {
                 limitCheckRunner.check()
                 appRuleCheckRunner.check()
                 checkSchedules()
+                reconcileEnforcement()
                 if (appAttemptStore.snapshot().pending.isNotEmpty()) queueAppAttemptsNow()
             } catch (e: CancellationException) {
                 throw e
