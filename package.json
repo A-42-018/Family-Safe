@@ -19,7 +19,8 @@
     "lint": "npm run lint -w @familysafe/web",
     "test:contracts": "npm run test -w @familysafe/contracts",
     "test:web": "npm run test -w @familysafe/web",
-    "test": "npm run test:contracts && npm run test:web && npm run test:functions"
+    "test": "npm run test:contracts && npm run test:web && npm run test:functions",
+    "test:db:local": "node scripts/db/local-verify.mjs"
   },
   "engines": {
     "node": ">=20"

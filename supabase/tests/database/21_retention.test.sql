@@ -1,6 +1,9 @@
 begin;
 select plan(25);
 
+-- The suite runs after seed.sql: start from an empty family tree so the counts below are exact (everything cascades from here).
+delete from auth.users;
+
 -- Fixture: parent A, A1 ENROLLED + ONLINE but silent for two hours, A2 ENROLLED + ONLINE and fresh ---------------------
 insert into auth.users (id,email) values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','a@example.test');
 insert into public.families (id,parent_id,name) values ('f0000000-0000-4000-8000-00000000000a','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Fam A');
