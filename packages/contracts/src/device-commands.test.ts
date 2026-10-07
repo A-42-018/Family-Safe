@@ -99,3 +99,43 @@ describe("SQL (migration 20261007000800_command_sync.sql) agrees with the contra
     expect(code).not.toMatch(/grant [^;]*device_tokens[^;]*authenticated/i);
   });
 });
+
+describe("Edge mirror and functions agree with the contract and the SQL parameter names", () => {
+  const read = (rel: string): string => readFileSync(new URL(`../../../supabase/${rel}`, import.meta.url), "utf8");
+  const mirror = read("functions/_shared/device-commands.ts");
+  const sql = read("migrations/20261007000800_command_sync.sql");
+  it("the mirror has the same constants and strict schemas", () => {
+    expect(mirror).toContain(`export const COMMAND_TYPES = [${COMMAND_TYPES.map((t) => `"${t}"`).join(", ")}] as const;`);
+    expect(mirror).toContain(`export const COMMAND_ACK_STATUSES = [${COMMAND_ACK_STATUSES.map((t) => `"${t}"`).join(", ")}] as const;`);
+    expect(mirror).toContain(`COMMAND_PULL_MAX = ${COMMAND_PULL_MAX};`);
+    expect(mirror).toContain(`PUSH_TOKEN_MIN = ${PUSH_TOKEN_MIN};`);
+    expect(mirror).toContain(`PUSH_TOKEN_MAX = ${PUSH_TOKEN_MAX};`);
+    expect(mirror).toContain("PUSH_TOKEN_PATTERN = /^[A-Za-z0-9:_.-]+$/;");
+    expect(mirror.match(/\.strict\(\)/g)).toHaveLength(2);
+    for (const field of ["token: z.string()", "command_id: z.string().uuid()", "status: z.enum(COMMAND_ACK_STATUSES)"]) expect(mirror).toContain(field);
+  });
+  it("each Edge function calls its RPC with exactly the parameters the SQL declares", () => {
+    const cases: [string, string, string[]][] = [
+      ["device-fcm-token", "device_register_push_token", ["p_device_id", "p_token"]],
+      ["device-commands", "device_commands_pull", ["p_device_id", "p_limit"]],
+      ["device-commands", "device_command_ack", ["p_device_id", "p_command_id", "p_status"]],
+    ];
+    for (const [fn, rpc, params] of cases) {
+      const index = read(`functions/${fn}/index.ts`);
+      expect(index).toContain(`"${rpc}"`);
+      const decl = sql.slice(sql.indexOf(`function public.${rpc}(`), sql.indexOf("returns", sql.indexOf(`function public.${rpc}(`)));
+      for (const p of params) {
+        expect(index).toContain(p);
+        expect(decl).toContain(p);
+      }
+    }
+  });
+  it("the handlers answer with the server time only (pull adds the id/type/expiry list) and never name a device", () => {
+    for (const fn of ["device-fcm-token", "device-commands"]) {
+      const handler = read(`functions/${fn}/handler.ts`);
+      expect(handler).toContain("requireActiveDevice");
+      expect(handler).toContain("server_time: new Date(nowMs).toISOString()");
+      expect(handler).not.toMatch(/device_id\s*:/);
+    }
+  });
+});

@@ -59,6 +59,10 @@ export const RULES = {
   deviceAppEventsIp: { name: "device-app-events-ip", limit: 60, windowSeconds: 300 }, // per IP, pre-auth
   deviceLimitEvents: { name: "device-limit-events", limit: 6, windowSeconds: 3600 }, // per device (after auth); one real report per day + retries
   deviceLimitEventsIp: { name: "device-limit-events-ip", limit: 60, windowSeconds: 300 }, // per IP, pre-auth
+  deviceFcmToken: { name: "device-fcm-token", limit: 12, windowSeconds: 3600 }, // per device (after auth); once after enrollment + token refreshes + retries
+  deviceFcmTokenIp: { name: "device-fcm-token-ip", limit: 60, windowSeconds: 300 }, // per IP, pre-auth
+  deviceCommands: { name: "device-commands", limit: 60, windowSeconds: 3600 }, // per device (after auth); wake-up pulls + fallback pull + acks + retries
+  deviceCommandsIp: { name: "device-commands-ip", limit: 120, windowSeconds: 300 }, // per IP, pre-auth
   location: { name: "location", limit: 60, windowSeconds: 900 },
   commands: { name: "commands", limit: 30, windowSeconds: 60 },
 } satisfies Record<string, RateLimitRule>;

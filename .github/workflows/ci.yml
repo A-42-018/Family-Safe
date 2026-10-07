@@ -15,9 +15,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
         with: { deno-version: v2.x }
-      - run: deno check --no-config --import-map=deno.json health/index.ts auth-events/index.ts enrollment-create/index.ts enrollment-redeem/index.ts device-revoke/index.ts device-refresh/index.ts device-heartbeat/index.ts device-info/index.ts device-permissions/index.ts device-apps/index.ts device-usage/index.ts device-config/index.ts device-app-events/index.ts device-limit-events/index.ts
+      - run: deno check --no-config --import-map=deno.json health/index.ts auth-events/index.ts enrollment-create/index.ts enrollment-redeem/index.ts device-revoke/index.ts device-refresh/index.ts device-heartbeat/index.ts device-info/index.ts device-permissions/index.ts device-apps/index.ts device-usage/index.ts device-config/index.ts device-app-events/index.ts device-limit-events/index.ts device-fcm-token/index.ts device-commands/index.ts
         working-directory: supabase/functions
-      - run: deno test --no-config --import-map=deno.json --allow-env _shared/ health/ auth-events/ enrollment-create/ enrollment-redeem/ device-revoke/ device-refresh/ device-heartbeat/ device-info/ device-permissions/ device-apps/ device-usage/ device-config/ device-app-events/ device-limit-events/
+      - run: deno test --no-config --import-map=deno.json --allow-env _shared/ health/ auth-events/ enrollment-create/ enrollment-redeem/ device-revoke/ device-refresh/ device-heartbeat/ device-info/ device-permissions/ device-apps/ device-usage/ device-config/ device-app-events/ device-limit-events/ device-fcm-token/ device-commands/
         working-directory: supabase/functions
   web:
     runs-on: ubuntu-latest
