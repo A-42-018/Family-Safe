@@ -80,3 +80,36 @@ No new permission and no manifest change. 18c will detect the foreground app thr
 | App limit reached | Measured on the phone (minutes in the foreground today); notice inside FamilySafe. **Nothing is reported** for limits. | Suspend the app when the limit is reached. |
 
 Detection runs only on the existing triggers: app resume, a rules change, and once a minute while the FamilySafe activity is STARTED. There is no foreground service and no background loop, so a blocked app opened while FamilySafe is closed is noticed at the next resume (events since the last check, never older than ~23 h, so the server would accept them). Opening an app **before** the device received the rule version is not an attempt (the first check after a new version only sets the starting point). Usage Access off or unreadable is an explicit state, never "allowed". `versionName` 0.18.0. **Unverified:** everything Kotlin (no Gradle/kotlinc in the sandbox), and `queryEvents` behaviour per OEM.
+
+## Track B decision (T1) — opt-in "managed mode" via Device Owner
+**Decision.** FamilySafe stays a Track A app by default (informs, cannot block). Track B is an **opt-in deployment mode**: the same APK, but provisioned as *Device Owner* on a device the family or school controls. Nothing in Track A changes when Track B is absent; without Device Owner status every Track B code path is a no-op.
+
+**How a device becomes managed (the only ways Android allows).**
+| Route | Use | Status |
+|---|---|---|
+| `adb shell dpm set-device-owner app.familysafe.child/.admin.FamilySafeAdminReceiver` | Development, demo, emulator or a test phone **with no accounts and not yet set up** | Supported by T2 |
+| QR / NFC / zero-touch provisioning on a factory-reset device | Family- or school-owned devices | Documented, not built (needs a provisioning payload + APK hosting; 34c) |
+| From a normal Play install on a set-up phone | — | **Impossible by design** — Android does not let an app make itself Device Owner |
+
+**What Track B uses — one API only.** `DevicePolicyManager.setPackagesSuspended(admin, packages, suspended)`: a suspended app cannot be started, its notifications are hidden, and Android shows the child a system "app paused" dialog (visible, not stealth). It is reversible by FamilySafe at any time.
+
+**Deliberately not used** (least privilege, visibility, honesty): `setUninstallBlocked` (no anti-removal), lock-task / kiosk, `setApplicationHidden`, camera / keyguard / factory-reset restrictions, password policies. The app never hides itself and is never a hidden persistence mechanism.
+
+**Never suspended:** FamilySafe itself, and any package the system refuses (it comes back in the failure list; FamilySafe keeps it in its own "tried, refused" state and never retries it every minute). For total-limit and schedule suspension, **system apps are never suspended** (phone, messages, settings, clock, camera, emergency); only explicit parent rules (block / app limit) can suspend a system app, and the system may still refuse.
+
+| Situation | Track A (default) | Track B (managed mode) |
+|---|---|---|
+| App **blocked** by the parent | Full-screen notice inside FamilySafe; parent told which app + when | App suspended |
+| App **limit** reached | Notice inside FamilySafe | App suspended until the next local day |
+| **Daily total** limit reached | Notice inside FamilySafe | Every non-system launcher app suspended until the next local day |
+| **Schedule** in force (bedtime / school / custom) | Quiet-time notice inside FamilySafe | Every non-system launcher app suspended while the window is in force |
+| Rule removed, device disconnected or revoked | Nothing to undo | **Everything FamilySafe suspended is released** |
+
+**Honesty rules.** Child-visible text says "managed mode: your parent can pause apps on this phone" and parent-visible text says "enforces" only when the device reported managed mode; Track A copy keeps saying the app cannot lock the phone or close other apps. A suspended app is "paused", not "secure" or "locked out", and copy never promises that it cannot be undone (a factory reset or removing Device Owner status ends it).
+
+**Leaving managed mode.** FamilySafe releases all suspensions on disconnect/revoke/rule removal (T3). Removing Device Owner status itself is a visible "leave managed mode" action planned with the child data screen (32d); until then a factory reset or `adb` on a debug build does it. Nothing hides this from the child.
+
+**Play distribution.** Track B is private / enterprise distribution (sideload or managed Google Play), not the default consumer Play listing; verify the current Play *Device Admin / DPC* policy text in 34c before any store submission.
+
+## T2 — Device admin wiring
+`admin/FamilySafeAdminReceiver` (a `DeviceAdminReceiver` with no logic), `res/xml/device_admin.xml` (`<uses-policies />`: no policy is requested through the old device-admin mechanism) and **one manifest receiver**: exported only because Android must be able to bind it, protected by `android:permission="android.permission.BIND_DEVICE_ADMIN"` (only the system can hold it), with the single `DEVICE_ADMIN_ENABLED` action. **No new `<uses-permission>`**; the merged-manifest allow-list is unchanged. The source guards that said "no `<receiver>`" now say "no receiver except this one, and it must carry `BIND_DEVICE_ADMIN`".
