@@ -182,8 +182,10 @@ androidComponents {
                 listOf(
                     "android.permission.INTERNET",
                     "android.permission.ACCESS_NETWORK_STATE",
-                    "android.permission.RECEIVE_BOOT_COMPLETED", // Phase 12: WorkManager reboot reschedule
-                    "android.permission.PACKAGE_USAGE_STATS", // Phase 16b: Usage Access, switched on by the child
+                    // Phase 12: WorkManager reboot reschedule
+                    "android.permission.RECEIVE_BOOT_COMPLETED",
+                    // Phase 16b: Usage Access, switched on by the child
+                    "android.permission.PACKAGE_USAGE_STATS",
                 ),
             )
             ownPackage.set(appId)

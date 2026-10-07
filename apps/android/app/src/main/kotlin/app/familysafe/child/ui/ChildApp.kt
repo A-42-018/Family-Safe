@@ -15,9 +15,9 @@ import androidx.navigation.compose.rememberNavController
 import app.familysafe.child.domain.AppRuleLabels
 import app.familysafe.child.domain.AppRuleNotices
 import app.familysafe.child.domain.ChildAppState
-import app.familysafe.child.domain.NoticeKeys
 import app.familysafe.child.domain.LimitNotice
 import app.familysafe.child.domain.LimitStatus
+import app.familysafe.child.domain.NoticeKeys
 import app.familysafe.child.ui.about.AboutScreen
 import app.familysafe.child.ui.devicestatus.DeviceStatusScreen
 import app.familysafe.child.ui.enrollment.EnrolledScreen

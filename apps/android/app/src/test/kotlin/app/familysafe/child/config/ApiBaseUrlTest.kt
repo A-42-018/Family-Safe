@@ -17,7 +17,10 @@ class ApiBaseUrlTest {
 
     @Test
     fun `builds endpoint urls`() {
-        assertEquals("https://x.co/functions/v1/enrollment-redeem", ok("https://x.co/functions/v1", false).endpoint("enrollment-redeem"))
+        assertEquals(
+            "https://x.co/functions/v1/enrollment-redeem",
+            ok("https://x.co/functions/v1", false).endpoint("enrollment-redeem"),
+        )
     }
 
     @Test

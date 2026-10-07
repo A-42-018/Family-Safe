@@ -51,7 +51,10 @@ class UsageRepositoryTest {
     fun `an empty app list is a valid report`() {
         val http = FakeHttp { completed(200, ok) }
         runSuspend { UsageRepository(http).send(DayUsage("2026-10-01", 0, 0, emptyList())) }
-        assertEquals("""{"day":"2026-10-01","total_screen_minutes":0,"unlock_count":0,"apps":[]}""", http.calls.single().second)
+        assertEquals(
+            """{"day":"2026-10-01","total_screen_minutes":0,"unlock_count":0,"apps":[]}""",
+            http.calls.single().second,
+        )
     }
 
     @Test
@@ -135,7 +138,9 @@ class UsageRepositoryTest {
         assertEquals(
             UsageResult.RetryLater(),
             runSuspend {
-                UsageRepository(FakeHttp { AuthedOutcome.NoToken(TokenUnavailable.Retry(RetryReason.Offline)) }).send(raw)
+                UsageRepository(
+                    FakeHttp { AuthedOutcome.NoToken(TokenUnavailable.Retry(RetryReason.Offline)) },
+                ).send(raw)
             },
         )
     }

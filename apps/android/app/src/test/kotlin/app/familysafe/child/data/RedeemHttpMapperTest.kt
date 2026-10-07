@@ -31,7 +31,15 @@ class RedeemHttpMapperTest {
     @Test
     fun `401 is an invalid code and the body is never parsed`() {
         var parsed = false
-        assertEquals(EnrollmentFailure.InvalidCode, failureOf(map(401) { parsed = true; ok }))
+        assertEquals(
+            EnrollmentFailure.InvalidCode,
+            failureOf(
+                map(401) {
+                    parsed = true
+                    ok
+                },
+            ),
+        )
         assertFalse(parsed)
     }
 

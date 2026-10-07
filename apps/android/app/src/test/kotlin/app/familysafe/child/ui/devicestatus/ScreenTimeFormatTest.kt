@@ -22,8 +22,12 @@ class ScreenTimeFormatTest {
         val lines = ScreenTimeFormat.plan(config(60, mapOf(6 to 180, 7 to 0)), Locale.ENGLISH)
         assertEquals(
             listOf(
-                DayLimitLine("Monday", 60), DayLimitLine("Tuesday", 60), DayLimitLine("Wednesday", 60),
-                DayLimitLine("Thursday", 60), DayLimitLine("Friday", 60), DayLimitLine("Saturday", 180),
+                DayLimitLine("Monday", 60),
+                DayLimitLine("Tuesday", 60),
+                DayLimitLine("Wednesday", 60),
+                DayLimitLine("Thursday", 60),
+                DayLimitLine("Friday", 60),
+                DayLimitLine("Saturday", 180),
                 DayLimitLine("Sunday", 0),
             ),
             lines,

@@ -22,9 +22,8 @@ class DeviceInfoContractDriftTest {
         return source.substring(start, end)
     }
 
-    private fun keysOf(body: String): Set<String> =
-        Regex("""(?:^|[{,])\s*([a-z_]+):\s*z\.""", RegexOption.MULTILINE)
-            .findAll(body).map { it.groupValues[1] }.toSet()
+    private fun keysOf(body: String): Set<String> = Regex("""(?:^|[{,])\s*([a-z_]+):\s*z\.""", RegexOption.MULTILINE)
+        .findAll(body).map { it.groupValues[1] }.toSet()
 
     private fun serialNames(className: String): Set<String> {
         val start = dtoSource.indexOf("class $className")
@@ -113,6 +112,9 @@ class DeviceInfoContractDriftTest {
     fun `the manifest still asks for no permission that device info would need`() {
         val manifest = RepoFiles.read("apps/android/app/src/main/AndroidManifest.xml")
         val declared = RepoFiles.declaredPermissions(manifest)
-        assertEquals(setOf("INTERNET", "ACCESS_NETWORK_STATE", "RECEIVE_BOOT_COMPLETED", "PACKAGE_USAGE_STATS"), declared)
+        assertEquals(
+            setOf("INTERNET", "ACCESS_NETWORK_STATE", "RECEIVE_BOOT_COMPLETED", "PACKAGE_USAGE_STATS"),
+            declared,
+        )
     }
 }

@@ -9,9 +9,9 @@ import app.familysafe.child.data.RedeemOutcome
 import app.familysafe.child.data.RedeemRequest
 import app.familysafe.child.domain.AppInventory
 import app.familysafe.child.domain.AppInventoryReport
-import app.familysafe.child.domain.AppUsageEntry
 import app.familysafe.child.domain.AppRuleInactiveReason
 import app.familysafe.child.domain.AppRuleStatus
+import app.familysafe.child.domain.AppUsageEntry
 import app.familysafe.child.domain.CachedScreenTimeConfig
 import app.familysafe.child.domain.DayUsage
 import app.familysafe.child.domain.DeviceAuthState

@@ -21,9 +21,8 @@ class RefreshContractDriftTest {
         return ts.substring(start, end)
     }
 
-    private fun keysOf(body: String): Set<String> =
-        Regex("""(?:^|[{,])\s*([a-z_]+):\s*z\.""", RegexOption.MULTILINE)
-            .findAll(body).map { it.groupValues[1] }.toSet()
+    private fun keysOf(body: String): Set<String> = Regex("""(?:^|[{,])\s*([a-z_]+):\s*z\.""", RegexOption.MULTILINE)
+        .findAll(body).map { it.groupValues[1] }.toSet()
 
     private fun serialNames(className: String): Set<String> {
         val start = dtoSource.indexOf("class $className")

@@ -24,7 +24,7 @@ class AppAttemptHttpMapperTest {
     }
 
     @Test
-    fun `every 5xx is a retry (repeats are harmless: the server drops them)`() {
+    fun `every 5xx is a retry (repeats are harmless, the server drops them)`() {
         for (status in listOf(500, 502, 503, 504, 599)) {
             assertEquals(AppAttemptResult.RetryLater(), AppAttemptHttpMapper.map(status, null), status.toString())
         }

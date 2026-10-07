@@ -37,7 +37,7 @@ class HeartbeatRunnerTest {
 
     @Test
     fun `success records the server time as last sync`() {
-        val result = runSuspend { runner(Http { done(200, ok)) }.run() }
+        val result = runSuspend { runner(Http { done(200, ok) }).run() }
         assertEquals(HeartbeatRunResult.Sent, result)
         assertEquals(Instant.parse("2026-10-01T09:30:00.000Z").toEpochMilli(), sync.status.value.lastSyncEpochMillis)
     }

@@ -96,8 +96,7 @@ class TokenProvider(
         if (cached?.token == rejectedToken) cached = null
     }
 
-    private fun freshCached(): String? =
-        cached?.takeIf { it.expiresAtMillis - clock() > REFRESH_MARGIN_MILLIS }?.token
+    private fun freshCached(): String? = cached?.takeIf { it.expiresAtMillis - clock() > REFRESH_MARGIN_MILLIS }?.token
 
     private suspend fun rotate(): AccessTokenResult {
         val stored = try {

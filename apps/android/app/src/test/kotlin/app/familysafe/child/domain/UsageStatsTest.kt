@@ -270,7 +270,9 @@ class UsageStatsTest {
 
     @Test
     fun `app minutes never add up to more than one day`() {
-        val result = UsageSanitizer.sanitize(day(listOf(app("com.a.a", 800), app("com.b.b", 700), app("com.c.c", 600))))!!
+        val result = UsageSanitizer.sanitize(
+            day(listOf(app("com.a.a", 800), app("com.b.b", 700), app("com.c.c", 600))),
+        )!!
         assertEquals(listOf("com.a.a", "com.c.c"), result.apps.map { it.packageName })
         assertTrue(result.apps.sumOf { it.foregroundMinutes } <= UsageLimits.MAX_MINUTES)
         assertEquals(1, result.omittedCount)

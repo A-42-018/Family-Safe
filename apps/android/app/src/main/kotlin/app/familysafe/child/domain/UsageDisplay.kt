@@ -15,18 +15,16 @@ object UsageDisplay {
     }
 
     /** The Permissions list with the Usage Access row replaced by the live reading; every other row is untouched. */
-    fun withUsageAccess(entries: List<PermissionEntry>, access: UsageAccess): List<PermissionEntry> =
-        entries.map {
-            if (it.key == PermissionKey.USAGE_ACCESS) PermissionEntry(it.key, permissionState(access)) else it
-        }
+    fun withUsageAccess(entries: List<PermissionEntry>, access: UsageAccess): List<PermissionEntry> = entries.map {
+        if (it.key == PermissionKey.USAGE_ACCESS) PermissionEntry(it.key, permissionState(access)) else it
+    }
 
     /** The apps shown by name: most minutes first, then most launches, then package name. */
-    fun topApps(apps: List<AppUsageEntry>, limit: Int = TOP_APPS): List<AppUsageEntry> =
-        apps.sortedWith(
-            compareByDescending<AppUsageEntry> { it.foregroundMinutes }
-                .thenByDescending { it.launchCount }
-                .thenBy { it.packageName },
-        ).take(limit)
+    fun topApps(apps: List<AppUsageEntry>, limit: Int = TOP_APPS): List<AppUsageEntry> = apps.sortedWith(
+        compareByDescending<AppUsageEntry> { it.foregroundMinutes }
+            .thenByDescending { it.launchCount }
+            .thenBy { it.packageName },
+    ).take(limit)
 
     /** `45`, `60`, `125` minutes as hours and minutes parts: (0, 45), (1, 0), (2, 5). Negative reads as zero. */
     fun hoursAndMinutes(totalMinutes: Int): Pair<Int, Int> {

@@ -29,7 +29,7 @@ class DeviceConfigRunnerTest {
     private fun done(status: Int, body: String = "") = AuthedOutcome.Completed(RawResponse(status, body, null))
     private fun body(version: Int, limit: Int = 60) = """
         {"data":{"config_version":$version,"daily_limit_minutes":$limit,"daily_limit_overrides":{},
-        "bedtime_enabled":false,"bedtime_start":null,"bedtime_end":null,"school_mode_enabled":false,
+        "bedtime_enabled":false,"bedtime_start":null,"bedtime_end":null,"school_mode_enabled":false,"app_rules":[],
         "server_time":"2026-10-01T09:30:00.000Z","next_interval_seconds":21600}}
     """.trimIndent()
 

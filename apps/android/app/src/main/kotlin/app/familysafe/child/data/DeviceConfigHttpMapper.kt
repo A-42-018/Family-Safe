@@ -1,7 +1,6 @@
 package app.familysafe.child.data
 
 import app.familysafe.child.domain.ParsedScreenTimeConfig
-import app.familysafe.child.domain.ScreenTimeConfig
 
 /** What one `device-config` pull came to. No server text is ever kept. */
 sealed interface DeviceConfigResult {

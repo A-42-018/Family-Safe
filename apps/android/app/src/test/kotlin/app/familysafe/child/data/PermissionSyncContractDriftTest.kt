@@ -142,7 +142,10 @@ class PermissionSyncContractDriftTest {
     fun `the manifest still asks for none of the permissions it only reports on`() {
         val manifest = RepoFiles.read("apps/android/app/src/main/AndroidManifest.xml")
         val declared = RepoFiles.declaredPermissions(manifest)
-        assertEquals(setOf("INTERNET", "ACCESS_NETWORK_STATE", "RECEIVE_BOOT_COMPLETED", "PACKAGE_USAGE_STATS"), declared)
+        assertEquals(
+            setOf("INTERNET", "ACCESS_NETWORK_STATE", "RECEIVE_BOOT_COMPLETED", "PACKAGE_USAGE_STATS"),
+            declared,
+        )
     }
 
     @Test

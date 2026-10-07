@@ -52,8 +52,7 @@ class DayUsage(
         other is DayUsage && day == other.day && totalScreenMinutes == other.totalScreenMinutes &&
             unlockCount == other.unlockCount && apps == other.apps && omittedCount == other.omittedCount
 
-    override fun hashCode(): Int =
-        listOf(day, totalScreenMinutes, unlockCount, apps, omittedCount).hashCode()
+    override fun hashCode(): Int = listOf(day, totalScreenMinutes, unlockCount, apps, omittedCount).hashCode()
 
     override fun toString(): String = "DayUsage"
 }
@@ -73,8 +72,7 @@ object UsageDays {
         return of(date, zone)
     }
 
-    fun previous(day: LocalDay, zone: ZoneId): LocalDay =
-        of(LocalDate.parse(day.day).minusDays(1), zone)
+    fun previous(day: LocalDay, zone: ZoneId): LocalDay = of(LocalDate.parse(day.day).minusDays(1), zone)
 
     private fun of(date: LocalDate, zone: ZoneId): LocalDay = LocalDay(
         day = date.toString(),
@@ -102,12 +100,7 @@ object UsageDays {
 object UsageEventAggregator {
     private const val MILLIS_PER_MINUTE = 60_000L
 
-    fun aggregate(
-        events: List<UsageEvent>,
-        day: String,
-        windowStartMillis: Long,
-        windowEndMillis: Long,
-    ): DayUsage {
+    fun aggregate(events: List<UsageEvent>, day: String, windowStartMillis: Long, windowEndMillis: Long): DayUsage {
         val open = HashMap<String, Long>()
         val millis = LinkedHashMap<String, Long>()
         val launches = HashMap<String, Int>()
@@ -264,8 +257,12 @@ object UsageReportCodec {
     fun encode(report: UsageReport): String {
         val u = report.usage
         val header = listOf(
-            VERSION_TAG, report.sentAtEpochMillis.toString(), u.day,
-            u.totalScreenMinutes.toString(), u.unlockCount.toString(), u.omittedCount.toString(),
+            VERSION_TAG,
+            report.sentAtEpochMillis.toString(),
+            u.day,
+            u.totalScreenMinutes.toString(),
+            u.unlockCount.toString(),
+            u.omittedCount.toString(),
         ).joinToString(FIELD.toString())
         val rows = u.apps.map {
             listOf(it.packageName, it.foregroundMinutes.toString(), it.launchCount.toString())

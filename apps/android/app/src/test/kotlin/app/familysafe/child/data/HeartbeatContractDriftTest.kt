@@ -23,9 +23,8 @@ class HeartbeatContractDriftTest {
         return source.substring(start, end)
     }
 
-    private fun keysOf(body: String): Set<String> =
-        Regex("""(?:^|[{,])\s*([a-z_]+):\s*z\.""", RegexOption.MULTILINE)
-            .findAll(body).map { it.groupValues[1] }.toSet()
+    private fun keysOf(body: String): Set<String> = Regex("""(?:^|[{,])\s*([a-z_]+):\s*z\.""", RegexOption.MULTILINE)
+        .findAll(body).map { it.groupValues[1] }.toSet()
 
     private fun serialNames(className: String): Set<String> {
         val start = dtoSource.indexOf("class $className")
@@ -86,7 +85,8 @@ class HeartbeatContractDriftTest {
             assertFalse(source.contains("bearerAuth(") || source.contains("Authorization"), name)
             assertFalse(logCall.containsMatchIn(source), name)
             // Only public Build/BatteryManager/Connectivity data: none of the hardware-identifier APIs.
-            val banned = listOf("ANDROID_ID", "IMEI", "getSerial", "Build.SERIAL", "AdvertisingId", "getLastKnownLocation")
+            val banned =
+                listOf("ANDROID_ID", "IMEI", "getSerial", "Build.SERIAL", "AdvertisingId", "getLastKnownLocation")
             for (word in banned) {
                 assertFalse(source.contains(word), "$name uses $word")
             }

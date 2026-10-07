@@ -143,7 +143,8 @@ class AppRuleEnforcementTest {
     @Test
     fun `an active reading measures today only and hands the raw events on`() {
         val events = listOf(
-            fg("com.a.a", noon - 3 * hour), bg("com.a.a", noon - 3 * hour + 30 * minute),
+            fg("com.a.a", noon - 3 * hour),
+            bg("com.a.a", noon - 3 * hour + 30 * minute),
             fg("com.b.b", noon - 2 * hour),
         )
         val source = Source(events)
@@ -252,8 +253,7 @@ class AppRuleEnforcementTest {
         version: Int? = rulesVersion,
         lastSeen: Map<String, Long> = emptyMap(),
         pending: List<AppAttempt> = emptyList(),
-    ) =
-        AppAttemptState(version, watermark, lastSeen, pending)
+    ) = AppAttemptState(version, watermark, lastSeen, pending)
 
     @Test
     fun `a new rule version starts at now without scanning, so an earlier open is no attempt`() {
@@ -271,12 +271,16 @@ class AppRuleEnforcementTest {
     fun `only blocked foreground events strictly after the watermark and not after now count`() {
         val w = noon - 10 * minute
         val events = listOf(
-            fg("com.a.a", w), // at the watermark: already looked at
+            // at the watermark: already looked at
+            fg("com.a.a", w),
             fg("com.a.a", w + minute),
-            fg("com.x.x", w + 2 * minute), // not blocked
-            bg("com.a.a", w + 3 * minute), // not a foreground event
+            // not blocked
+            fg("com.x.x", w + 2 * minute),
+            // not a foreground event
+            bg("com.a.a", w + 3 * minute),
             UsageEvent(UsageEventKind.SCREEN_ON, null, w + 4 * minute),
-            fg("com.a.a", noon + minute), // in the future
+            // in the future
+            fg("com.a.a", noon + minute),
         )
         val result = AppAttemptDetector.detect(state(w), rulesVersion, blockedSet, events, noon)
         assertEquals(listOf(AppAttempt("com.a.a", w + minute)), result.pending)
@@ -295,12 +299,18 @@ class AppRuleEnforcementTest {
         // exactly five minutes apart is counted again (the server drops only "within" five minutes)
         val edge = AppAttemptDetector.detect(
             state(w, lastSeen = mapOf("com.a.a" to w + minute)),
-            rulesVersion, blockedSet, listOf(fg("com.a.a", w + 6 * minute)), noon,
+            rulesVersion,
+            blockedSet,
+            listOf(fg("com.a.a", w + 6 * minute)),
+            noon,
         )
         assertEquals(1, edge.pending.size)
         val inside = AppAttemptDetector.detect(
             state(w, lastSeen = mapOf("com.a.a" to w + minute)),
-            rulesVersion, blockedSet, listOf(fg("com.a.a", w + 6 * minute - 1)), noon,
+            rulesVersion,
+            blockedSet,
+            listOf(fg("com.a.a", w + 6 * minute - 1)),
+            noon,
         )
         assertTrue(inside.pending.isEmpty())
     }
@@ -353,7 +363,9 @@ class AppRuleEnforcementTest {
     @Test
     fun `the state codec round-trips and writes the documented string`() {
         val s = AppAttemptState(
-            5, 1_700_000_000_000L, mapOf("com.a.a" to 10L, "com.b.b" to 20L),
+            5,
+            1_700_000_000_000L,
+            mapOf("com.a.a" to 10L, "com.b.b" to 20L),
             listOf(AppAttempt("com.a.a", 10L), AppAttempt("com.b.b", 20L)),
         )
         val text = AppAttemptStateCodec.encode(s)

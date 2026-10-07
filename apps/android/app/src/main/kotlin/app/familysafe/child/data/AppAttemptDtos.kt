@@ -6,7 +6,7 @@ import kotlinx.serialization.json.Json
 
 /**
  * Wire format of `appEventSchema` / `deviceAppEventsRequestSchema` (`device-app-events`). Every key is required and
- * none is nullable. Names are checked by a JVM drift test. No device id and no app label: just which restricted
+ * none is nullable. Names are checked by a JVM drift test. No device id and no app name: just which restricted
  * package was opened and when.
  */
 @Serializable

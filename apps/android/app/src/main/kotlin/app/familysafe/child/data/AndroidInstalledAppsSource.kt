@@ -44,12 +44,11 @@ class AndroidInstalledAppsSource(private val context: Context) : InstalledAppsSo
             pm.queryIntentActivities(launcher, 0)
         }
 
-    private fun labelOf(pm: PackageManager, info: ResolveInfo, app: ApplicationInfo): String =
-        try {
-            info.loadLabel(pm).toString()
-        } catch (_: Exception) {
-            app.packageName
-        }
+    private fun labelOf(pm: PackageManager, info: ResolveInfo, app: ApplicationInfo): String = try {
+        info.loadLabel(pm).toString()
+    } catch (_: Exception) {
+        app.packageName
+    }
 
     private fun versionOf(pm: PackageManager, packageName: String): String? = try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

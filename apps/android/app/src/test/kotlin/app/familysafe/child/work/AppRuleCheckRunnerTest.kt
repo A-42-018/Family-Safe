@@ -61,7 +61,14 @@ class AppRuleCheckRunnerTest {
     private var now = noon
 
     private fun runner(rules: () -> CachedScreenTimeConfig?, probe: Probe, source: Source) = AppRuleCheckRunner(
-        rules, probe, source, status, attempts, { notified++ }, { now }, { ZoneId.of("UTC") },
+        rules,
+        probe,
+        source,
+        status,
+        attempts,
+        { notified++ },
+        { now },
+        { ZoneId.of("UTC") },
     )
 
     @Test

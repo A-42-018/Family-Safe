@@ -13,8 +13,13 @@ class AppRuleEnforcementGuardTest {
     private val strings = RepoFiles.read("apps/android/app/src/main/res/values/strings.xml")
 
     private val ruleFiles = listOf(
-        "domain/AppRules.kt", "domain/AppRuleEnforcement.kt", "data/AppAttemptStore.kt", "data/AppRuleStatusStore.kt",
-        "work/AppRuleCheckRunner.kt", "work/AppAttemptRunner.kt", "ui/limit/AppRuleNoticeScreen.kt",
+        "domain/AppRules.kt",
+        "domain/AppRuleEnforcement.kt",
+        "data/AppAttemptStore.kt",
+        "data/AppRuleStatusStore.kt",
+        "work/AppRuleCheckRunner.kt",
+        "work/AppAttemptRunner.kt",
+        "ui/limit/AppRuleNoticeScreen.kt",
         "ui/devicestatus/AppRuleStatusFormat.kt",
     )
 
@@ -47,7 +52,9 @@ class AppRuleEnforcementGuardTest {
     fun `the rule check itself is local and silent`() {
         val banned = Regex("""Ktor|DeviceHttp|DeviceGetHttp|SharedPreferences|File\(|Log\.|println""")
         val files = listOf(
-            "domain/AppRules.kt", "domain/AppRuleEnforcement.kt", "data/AppRuleStatusStore.kt",
+            "domain/AppRules.kt",
+            "domain/AppRuleEnforcement.kt",
+            "data/AppRuleStatusStore.kt",
             "work/AppRuleCheckRunner.kt",
         )
         files.forEach { assertFalse(banned.containsMatchIn(src(it)), "$it must stay local and silent") }

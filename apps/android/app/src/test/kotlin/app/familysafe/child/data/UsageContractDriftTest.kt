@@ -203,7 +203,11 @@ class UsageContractDriftTest {
         assertTrue(source.contains("UsageStatsManager"))
         assertTrue(source.contains("queryEvents"))
         for (type in listOf(
-            "ACTIVITY_RESUMED", "ACTIVITY_PAUSED", "SCREEN_INTERACTIVE", "SCREEN_NON_INTERACTIVE", "KEYGUARD_HIDDEN",
+            "ACTIVITY_RESUMED",
+            "ACTIVITY_PAUSED",
+            "SCREEN_INTERACTIVE",
+            "SCREEN_NON_INTERACTIVE",
+            "KEYGUARD_HIDDEN",
         )) {
             assertTrue(source.contains("UsageEvents.Event.$type"), type)
         }

@@ -63,9 +63,8 @@ class PermissionSyncReport(val observation: PermissionObservation, val sentAtEpo
 
 /** Single-string form of a [PermissionSyncReport]: `sentAt;STATE,STATE,...` in [PermissionCatalog.SYNCED] order. */
 object PermissionSyncReportCodec {
-    fun encode(report: PermissionSyncReport): String =
-        report.sentAtEpochMillis.toString() + ";" +
-            PermissionCatalog.SYNCED.joinToString(",") { report.observation.states.getValue(it).name }
+    fun encode(report: PermissionSyncReport): String = report.sentAtEpochMillis.toString() + ";" +
+        PermissionCatalog.SYNCED.joinToString(",") { report.observation.states.getValue(it).name }
 
     /** Null for anything [encode] would not write. */
     fun decode(text: String?): PermissionSyncReport? {

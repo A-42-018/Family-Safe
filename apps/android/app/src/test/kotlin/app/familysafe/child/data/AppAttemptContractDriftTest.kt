@@ -1,8 +1,8 @@
 package app.familysafe.child.data
 
+import app.familysafe.child.domain.AppAttemptBatch
 import app.familysafe.child.domain.AppInventoryLimits
 import app.familysafe.child.domain.AppRuleLimits
-import app.familysafe.child.domain.AppAttemptBatch
 import app.familysafe.child.testutil.RepoFiles
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -47,7 +47,13 @@ class AppAttemptContractDriftTest {
     private fun serialNames(className: String): Set<String> {
         val start = dtoSource.indexOf("class $className")
         check(start >= 0) { "class $className not found" }
-        val end = dtoSource.indexOf("\n) {", start).let { if (it < 0) dtoSource.indexOf("\n)", start) else it }
+        val lineEnd = dtoSource.indexOf('\n', start)
+        val firstLine = dtoSource.substring(start, lineEnd).trimEnd()
+        val end = if (firstLine.endsWith(") {") || firstLine.endsWith(")")) {
+            lineEnd // single-line class header
+        } else {
+            dtoSource.indexOf("\n) {", start).let { if (it < 0) dtoSource.indexOf("\n)", start) else it }
+        }
         return Regex("""@SerialName\("([a-z_]+)"\)""").findAll(dtoSource.substring(start, end))
             .map { it.groupValues[1] }.toSet()
     }
@@ -98,8 +104,10 @@ class AppAttemptContractDriftTest {
     @Test
     fun `the de-duplication window is the one the database applies`() {
         val migration = RepoFiles.root().resolve("supabase/migrations/20260930001700_app_rules.sql").readText()
-        assertTrue(migration.contains("${AppRuleLimits.ATTEMPT_DEDUPE_SECONDS} seconds") ||
-            migration.contains("interval '5 minutes'") || migration.contains("300"))
+        assertTrue(
+            migration.contains("${AppRuleLimits.ATTEMPT_DEDUPE_SECONDS} seconds") ||
+                migration.contains("interval '5 minutes'") || migration.contains("300"),
+        )
         assertEquals(300L, AppRuleLimits.ATTEMPT_DEDUPE_SECONDS)
     }
 

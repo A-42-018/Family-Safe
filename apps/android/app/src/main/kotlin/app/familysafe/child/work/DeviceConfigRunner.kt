@@ -31,23 +31,22 @@ class DeviceConfigRunner(
     private val store: DeviceConfigStore,
     private val clock: () -> Long = { System.currentTimeMillis() },
 ) {
-    suspend fun run(): DeviceConfigRunResult =
-        when (val result = repository.fetch(store.cached.value?.config)) {
-            is DeviceConfigResult.Fetched -> {
-                store.record(result.parsed.config, clock())
-                DeviceConfigRunResult.Updated
-            }
-            // The cache changed or vanished between the request and the answer: pull again in full.
-            is DeviceConfigResult.NotModified -> if (store.confirm(result.version, clock())) {
-                DeviceConfigRunResult.Unchanged
-            } else {
-                DeviceConfigRunResult.Retry
-            }
-            DeviceConfigResult.NotEnrolled, DeviceConfigResult.Disconnected -> {
-                store.clear()
-                DeviceConfigRunResult.Stopped
-            }
-            is DeviceConfigResult.RetryLater -> DeviceConfigRunResult.Retry
-            DeviceConfigResult.Rejected -> DeviceConfigRunResult.Failed
+    suspend fun run(): DeviceConfigRunResult = when (val result = repository.fetch(store.cached.value?.config)) {
+        is DeviceConfigResult.Fetched -> {
+            store.record(result.parsed.config, clock())
+            DeviceConfigRunResult.Updated
         }
+        // The cache changed or vanished between the request and the answer: pull again in full.
+        is DeviceConfigResult.NotModified -> if (store.confirm(result.version, clock())) {
+            DeviceConfigRunResult.Unchanged
+        } else {
+            DeviceConfigRunResult.Retry
+        }
+        DeviceConfigResult.NotEnrolled, DeviceConfigResult.Disconnected -> {
+            store.clear()
+            DeviceConfigRunResult.Stopped
+        }
+        is DeviceConfigResult.RetryLater -> DeviceConfigRunResult.Retry
+        DeviceConfigResult.Rejected -> DeviceConfigRunResult.Failed
+    }
 }

@@ -25,9 +25,9 @@ class AppAttemptRepositoryTest {
     private val t2 = Instant.parse("2026-10-01T09:41:07Z").toEpochMilli()
 
     private fun completed(status: Int, retryAfter: String? = null) =
-        AuthedOutcome.Completed(RawResponse(status, SERVER_TIME_BODY, retryAfter))
+        AuthedOutcome.Completed(RawResponse(status, serverTimeBody, retryAfter))
 
-    private val SERVER_TIME_BODY = """{"data":{"server_time":"2026-10-01T09:30:00.000Z"}}"""
+    private val serverTimeBody = """{"data":{"server_time":"2026-10-01T09:30:00.000Z"}}"""
 
     @Test
     fun `posts exactly the contract keys to device-app-events`() {
@@ -91,11 +91,10 @@ class AppAttemptRepositoryTest {
 
     @Test
     fun `token problems map to their own results`() {
-        fun send(reason: TokenUnavailable) =
-            runSuspend {
-                val repository = AppAttemptRepository(FakeHttp { AuthedOutcome.NoToken(reason) })
-                repository.send(listOf(AppAttempt("com.example.a", t1)))
-            }
+        fun send(reason: TokenUnavailable) = runSuspend {
+            val repository = AppAttemptRepository(FakeHttp { AuthedOutcome.NoToken(reason) })
+            repository.send(listOf(AppAttempt("com.example.a", t1)))
+        }
         assertEquals(AppAttemptResult.NotEnrolled, send(TokenUnavailable.NotEnrolled))
         assertEquals(AppAttemptResult.Disconnected, send(TokenUnavailable.Disconnected))
         assertEquals(AppAttemptResult.RetryLater(7), send(TokenUnavailable.Retry(RetryReason.RateLimited, 7)))

@@ -323,8 +323,10 @@ object AppAttemptStateCodec {
 /** Which attempts go into one upload, and how a time is written on the wire. */
 object AppAttemptBatch {
     private const val PAST_MILLIS =
-        (AppRuleLimits.EVENT_PAST_SECONDS - AppRuleLimits.EVENT_EDGE_MARGIN_SECONDS -
-            AppRuleLimits.EVENT_CLIENT_MARGIN_SECONDS) * 1_000L
+        (
+            AppRuleLimits.EVENT_PAST_SECONDS - AppRuleLimits.EVENT_EDGE_MARGIN_SECONDS -
+                AppRuleLimits.EVENT_CLIENT_MARGIN_SECONDS
+            ) * 1_000L
 
     /** Attempts the server could still accept (not too old), with times in the future pulled back to "now". */
     fun usable(pending: List<AppAttempt>, nowEpochMillis: Long): List<AppAttempt> = pending

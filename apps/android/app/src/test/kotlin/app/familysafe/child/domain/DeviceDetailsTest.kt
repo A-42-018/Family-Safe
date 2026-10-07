@@ -13,7 +13,11 @@ class DeviceDetailsTest {
     @Test
     fun `patch parser accepts real dates only`() {
         assertEquals("2025-09-05", SecurityPatchParser.normalize(" 2025-09-05 "))
-        for (bad in listOf(null, "", "  ", "2025-9-5", "2025-02-30", "2009-12-31", "20250905", "2025-09-05T00", "abc")) {
+        for (
+        bad in listOf(
+            null, "", "  ", "2025-9-5", "2025-02-30", "2009-12-31", "20250905", "2025-09-05T00", "abc",
+        )
+        ) {
             assertNull(SecurityPatchParser.normalize(bad), bad)
         }
         assertEquals("2010-01-01", SecurityPatchParser.normalize("2010-01-01"))

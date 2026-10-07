@@ -75,8 +75,14 @@ class DeviceConfigStoreTest {
     fun `junk or tampered storage reads as no rules`() {
         val backing = MapSecureStore()
         val junkValues = listOf(
-            "yesterday", "v2;5;0;90;;;0;", "v2;5;3;99999;;;0;", "v2;5;3;90;9=1;;0;", "v2;5;3;90;;22:00-22:00;0;",
-            "v2;5;3;90;;;0;x=B", "5;3;90;;;0", // second one: the pre-18c six-field form
+            "yesterday",
+            "v2;5;0;90;;;0;",
+            "v2;5;3;99999;;;0;",
+            "v2;5;3;90;9=1;;0;",
+            "v2;5;3;90;;22:00-22:00;0;",
+            "v2;5;3;90;;;0;x=B",
+            // second one: the pre-18c six-field form
+            "5;3;90;;;0",
         )
         for (junk in junkValues) {
             backing.map["screen_time_config"] = junk

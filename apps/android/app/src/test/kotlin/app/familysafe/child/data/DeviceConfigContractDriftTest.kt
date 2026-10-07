@@ -24,9 +24,11 @@ class DeviceConfigContractDriftTest {
         return source.substring(start, end)
     }
 
-    private fun keysOf(body: String): Set<String> =
-        Regex("""(?:^|[{,])\s*([a-z_]+):\s*(?:z\.|hhmm|limitMinutes|dayLimitOverridesSchema|timezoneSchema)""", RegexOption.MULTILINE)
-            .findAll(body).map { it.groupValues[1] }.toSet()
+    private fun keysOf(body: String): Set<String> = Regex(
+        """(?:^|[{,])\s*([a-z_]+):\s*(?:z\.|hhmm|limitMinutes|dayLimitOverridesSchema|timezoneSchema)""",
+        RegexOption.MULTILINE,
+    )
+        .findAll(body).map { it.groupValues[1] }.toSet()
 
     private fun serialNames(className: String): Set<String> {
         val start = dtoSource.indexOf("class $className")
@@ -59,7 +61,9 @@ class DeviceConfigContractDriftTest {
         val body = schemaBody(ts, "deviceConfigSchema")
         val nullable = Regex("""([a-z_]+):[^\n]*\.nullable\(\)""").findAll(body).map { it.groupValues[1] }.toSet()
         assertEquals(setOf("daily_limit_minutes", "bedtime_start", "bedtime_end", "timezone"), nullable)
-        val dtoNullable = Regex("""val (\w+): (?:String|Int)\?""").findAll(dtoSource).count()
+        val dtoNullable = Regex(
+            """val (\w+): (?:String|Int)\?""",
+        ).findAll(dtoSource.substringAfter("class DeviceConfigDataDto")).count()
         assertEquals(nullable.size - 1, dtoNullable) // `timezone` is not in the DTO until Phase 19c
     }
 

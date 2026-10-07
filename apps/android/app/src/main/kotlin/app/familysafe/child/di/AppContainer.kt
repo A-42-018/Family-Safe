@@ -8,10 +8,10 @@ import app.familysafe.child.BuildConfig
 import app.familysafe.child.config.ApiBaseUrl
 import app.familysafe.child.config.AppConfig
 import app.familysafe.child.data.AesGcmSealer
-import app.familysafe.child.data.AndroidInstalledAppsSource
 import app.familysafe.child.data.AndroidDeviceDetailsSource
 import app.familysafe.child.data.AndroidDeviceInfoProvider
 import app.familysafe.child.data.AndroidHeartbeatPayloadSource
+import app.familysafe.child.data.AndroidInstalledAppsSource
 import app.familysafe.child.data.AndroidPermissionProbe
 import app.familysafe.child.data.AndroidUsageAccessProbe
 import app.familysafe.child.data.AndroidUsageStatsSource

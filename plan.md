@@ -5,7 +5,7 @@ Full history of Phases 1–19b: `docs/PLAN_ARCHIVE.md` (grep it, never read it w
 ## Current status
 **Last finished:** 19b — Schedules, web. **Plan v2 (2026-10-07):** roadmap regrouped into 9 demoable milestones (M0–M8), ~85 sessions in total (8 merges offset by 6 new), MVP reachable in ~36. No source code changed.
 **Repo:** https://github.com/A-42-018/Family-Safe (branch `main`) — commit + push after every sub-phase, then ZIP.
-**Next step:** read the first CI run (database + android jobs) → H1a (pgTAP fixes) / H2a (Kotlin compile fixes).
+**Next step:** M0-2 — walking skeleton (needs Docker + Supabase CLI + emulator; ask before installing), then M1.
 
 ## Verified 2026-10-07 (real toolchains, macOS, Node 22.12, Deno 2.9.6)
 | Check | Result |
@@ -18,9 +18,11 @@ Full history of Phases 1–19b: `docs/PLAN_ARCHIVE.md` (grep it, never read it w
 | `npm run build:web` | ✅ 29 routes |
 | `npm run test:functions` (Deno) | ✅ 214 / 214 |
 | `deno check */index.ts` | ✅ all 13 functions |
-| pgTAP `scripts/db/verify.sh` | ☐ not run (no Postgres/pgTAP locally) |
-| Gradle (assemble, unit, ktlint, lint, manifest guard) | ☐ not run (no Android SDK locally) |
-→ **H1b is done.** H1a is done except pgTAP. **Kotlin (9b–19b, ~8.1k main + ~9.2k test LOC) has still never compiled — the #1 project risk.**
+| pgTAP `scripts/db/verify.sh` | ✅ green in GitHub CI (first run 2026-10-07; not run locally) |
+| Gradle `assembleDebug` | ✅ compiled first try (Kotlin 2.2.21, AGP 8.13, JDK 21 locally / 17 in CI) |
+| Gradle `testDebugUnitTest` | ✅ 702 / 702 (after 7 test-side fixes) |
+| ktlint · Android lint · manifest guard | ✅ clean |
+→ **H1a, H1b, H2a, H2b, H2c are done.** The Kotlin worry was unfounded: main code compiled unchanged; only test code and style needed fixes (list in phase log). Local Android build: `cd apps/android && echo "sdk.dir=<sdk path>" > local.properties` (gitignored), `JAVA_HOME` = JDK 17–21 (not 25).
 
 ## Session rules (how every sub-phase is sized)
 1. One sub-phase = one session = ONE layer: SQL | Edge+contracts | web | Android-domain | Android-data/work | Android-UI | docs | verify-fix. **Exception (v2):** two S-sized sub-phases of the same feature may share a session when listed as `a+b` in the roadmap.
@@ -67,11 +69,11 @@ Each milestone is a vertical, demoable slice. Sub-phase IDs and briefs are uncha
 | ID | Layer | Scope | Size | Status |
 |---|---|---|---|---|
 | H1b | V | npm ci, typecheck, lint, vitest, next build | M | ☑ 2026-10-07 |
-| H1a | V | contracts ☑ + Deno ☑ done; **pgTAP remains** (via CI or local Postgres+pgTAP) | S | ◐ |
-| M0-1 | V | **NEW** git init + GitHub + push; fix CI Deno test list; fix lint warning; CI 5 jobs visible | S | ◐ pushed; CI results pending |
-| H2a | V | first Gradle compile; fix compile errors (may need H2a-b, H2a-c) | M | ☐ |
-| H2b | V | JVM unit + drift tests | M | ☐ |
-| H2c | V | ktlint, Android lint, manifest guard | S | ☐ |
+| H1a | V | contracts ☑ + Deno ☑ + pgTAP ☑ (CI) | S | ☑ 2026-10-07 |
+| M0-1 | V | **NEW** git init + GitHub + push; fix CI Deno test list; fix lint warning; CI 5 jobs visible | S | ☑ 2026-10-07 |
+| H2a | V | first Gradle compile; fix compile errors (may need H2a-b, H2a-c) | M | ☑ 2026-10-07 |
+| H2b | V | JVM unit + drift tests | M | ☑ 2026-10-07 (702) |
+| H2c | V | ktlint, Android lint, manifest guard | S | ☑ 2026-10-07 |
 | M0-2 | V | **NEW** walking skeleton on local stack (pulls 33a forward): `supabase start` → sign up → child → pairing code → emulator enrolls → heartbeat/device info/apps/usage visible on web → set a limit → device pulls config | M | ☐ |
 **Demo:** the M0-2 script, recorded as `docs/DEMO.md`. **CI must be fully green before M1.**
 
@@ -137,6 +139,7 @@ Map provider suggestion for 21c-2 (confirm with research): MapLibre GL / Leaflet
 6. In-memory limiters are per Edge isolate → effectively off in production until 31a.
 
 ## Phase log (latest)
+- **H2a–c (2026-10-07)** — Kotlin compiled unchanged. Fixed test-side defects only: colon in a backticked test name (`AppAttemptHttpMapperTest`), stray `)` (`HeartbeatRunnerTest:40`), `AppAttemptContractDriftTest.serialNames` assumed multi-line DTOs, `AppInventoryContractDriftTest` regex missed `trimmedText(` keys and had 4× backslashes in a raw string, `DeviceConfigContractDriftTest` counted nullables across `AppRuleDto` too (now scoped to `DeviceConfigDataDto`), `DeviceConfigRunnerTest` fixture lacked `app_rules`; reworded a doc comment containing "label" that a guard test bans; ktlintFormat + trailing-comment moves in `build.gradle.kts` and tests. No guard or drift assertion was weakened. CI mirror: all jobs.
 - **M0-1 (2026-10-07)** — repo on GitHub (`A-42-018/Family-Safe`, `main`): baseline commit of 19b + plan v2, then CI `deno test` step now covers all 13 functions (was missing `device-usage`, `device-config`, `device-app-events`) and the unused `eslint-disable` in `lib/schedules/schedules.ts` removed (lint 0 warnings). Status ◐ until the first CI run's database + android jobs are read.
 - **Plan v2 (2026-10-07)** — ran the web/contracts/Deno toolchains for real (all green, numbers above); H1b ☑, H1a ◐ (pgTAP left). Roadmap regrouped into milestones M0–M8 with demo gates and an MVP cut line; Track B (Device Owner) T1–T4 added; 20c-1, 30a/b, 29a–d, 32a moved earlier; 8 S-sized pairs merged; 33a pulled into M0-2; git + CI made the verification source of truth. No source code changed.
 - **Roadmap reset after 19b** — plan.md slimmed, remaining phases split into one-layer sub-phases, verification phases H1/H2 added.

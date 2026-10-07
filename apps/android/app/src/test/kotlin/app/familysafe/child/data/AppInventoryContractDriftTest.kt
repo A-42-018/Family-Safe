@@ -23,7 +23,7 @@ class AppInventoryContractDriftTest {
     }
 
     private fun keysOf(body: String): Set<String> =
-        Regex("""(?:^|[{,])\s*([a-z_]+):\s*z\.""", RegexOption.MULTILINE)
+        Regex("""(?:^|[{,])\s*([a-z_]+):\s*(?:z\.|trimmedText\()""", RegexOption.MULTILINE)
             .findAll(body).map { it.groupValues[1] }.toSet()
 
     private fun serialNames(className: String): Set<String> {
@@ -102,7 +102,7 @@ class AppInventoryContractDriftTest {
         val sanitizer = RepoFiles.read("$kt/domain/AppInventory.kt")
         val contractClass = Regex("""CONTROL_CHARS = /(\[[^/]+\])/""").find(ts)!!.groupValues[1]
         assertEquals("[\\u0000-\\u001f\\u007f-\\u009f]", contractClass)
-        assertTrue(sanitizer.contains("""Regex("[\\\\u0000-\\\\u001f\\\\u007f-\\\\u009f]")"""))
+        assertTrue(sanitizer.contains("""Regex("[\\u0000-\\u001f\\u007f-\\u009f]")"""))
     }
 
     @Test
@@ -162,7 +162,10 @@ class AppInventoryContractDriftTest {
     fun `the manifest permission allow-list is unchanged and only a launcher query was added`() {
         val manifest = RepoFiles.read("apps/android/app/src/main/AndroidManifest.xml")
         val declared = RepoFiles.declaredPermissions(manifest)
-        assertEquals(setOf("INTERNET", "ACCESS_NETWORK_STATE", "RECEIVE_BOOT_COMPLETED", "PACKAGE_USAGE_STATS"), declared)
+        assertEquals(
+            setOf("INTERNET", "ACCESS_NETWORK_STATE", "RECEIVE_BOOT_COMPLETED", "PACKAGE_USAGE_STATS"),
+            declared,
+        )
         assertFalse(manifest.contains("QUERY_ALL_PACKAGES"))
         val queries = Regex("""<queries>(.*?)</queries>""", RegexOption.DOT_MATCHES_ALL).findAll(manifest).toList()
         assertEquals(1, queries.size)
