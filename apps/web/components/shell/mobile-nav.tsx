@@ -8,7 +8,7 @@ import { NavLinks } from "./nav-links";
 
 // Drawer built on the native <dialog>: showModal() gives a focus trap, inert background, Escape-to-close and focus
 // restore for free, with no extra dependency and no inline scripts.
-export function MobileNav() {
+export function MobileNav({ unread = null }: { unread?: number | null }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
@@ -55,7 +55,7 @@ export function MobileNav() {
           </Button>
         </div>
         <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
-          <NavLinks onNavigate={close} />
+          <NavLinks onNavigate={close} unread={unread} />
         </nav>
       </dialog>
     </>

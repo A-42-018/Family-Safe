@@ -7,7 +7,7 @@ import { Sidebar } from "./sidebar";
 import { UserMenu } from "./user-menu";
 
 // Authenticated layout chrome. Contains no data access: identity comes from the (app) layout's server-side guard.
-export function AppShell({ email, theme, children }: { email: string; theme: Theme; children: React.ReactNode }) {
+export function AppShell({ email, theme, unread = null, children }: { email: string; theme: Theme; unread?: number | null; children: React.ReactNode }) {
   return (
     <BreadcrumbLabelsProvider>
     <div className="min-h-screen">
@@ -17,10 +17,10 @@ export function AppShell({ email, theme, children }: { email: string; theme: The
       >
         Skip to content
       </a>
-      <Sidebar />
+      <Sidebar unread={unread} />
       <div className="lg:pl-64">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background px-4 sm:px-6">
-          <MobileNav />
+          <MobileNav unread={unread} />
           <div className="min-w-0 flex-1">
             <Breadcrumbs />
           </div>

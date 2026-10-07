@@ -49,6 +49,11 @@ export const APP_RULES = {
   write: { name: "app-rules-write", limit: 60, windowSeconds: 300 },
 } satisfies Record<string, RateLimitRule>;
 
+/** Marking notifications read (Phase 29b), keyed by the verified user id. */
+export const NOTIFICATIONS = {
+  write: { name: "notifications-write", limit: 60, windowSeconds: 300 },
+} satisfies Record<string, RateLimitRule>;
+
 /** Schedule and time-zone saves/deletes (Phase 19b), keyed by the verified user id. Own allowance, like app rules. */
 export const SCHEDULES = {
   write: { name: "schedules-write", limit: 60, windowSeconds: 300 },

@@ -2,10 +2,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isActive, NAV_ITEMS } from "@/lib/nav";
+import { unreadBadge } from "@/lib/notifications/notifications";
 import { cn } from "@/lib/utils";
 import { Icon } from "./icons";
 
-export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+export function NavLinks({ onNavigate, unread = null }: { onNavigate?: () => void; unread?: number | null }) {
   const pathname = usePathname();
   return (
     <ul className="space-y-1">
@@ -26,6 +27,12 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             >
               <Icon name={item.icon} />
               {item.label}
+              {item.href === "/notifications" && unreadBadge(unread) ? (
+                <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground" data-testid="unread-badge">
+                  {unreadBadge(unread)}
+                  <span className="sr-only"> unread</span>
+                </span>
+              ) : null}
             </Link>
           </li>
         );

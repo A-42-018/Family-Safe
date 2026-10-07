@@ -661,3 +661,35 @@ describe("Phase 30b audit-log page", () => {
     expect(src("lib/audit/audit.ts")).toMatch(/ip: row\.action === "LOGIN" \? row\.ip : null/);
   });
 });
+
+describe("Phase 29b notifications page", () => {
+  const src = (p: string) => read(`${root}${p}`);
+  const page = src("app/(app)/notifications/page.tsx");
+
+  it("the page parses its limit, renders the list and holds no data-access code of its own", () => {
+    expect(page).toContain("parseNotificationsLimit(");
+    expect(page).toContain("<NotificationList");
+    expect(page).toContain("<AutoRefresh");
+    expect(page).toMatch(/metadata[^=]*=\s*\{\s*title:/);
+    expect(page).not.toMatch(/supabase|fetch\(|localStorage|sessionStorage|console\.|dangerouslySetInnerHTML/i);
+  });
+  it("the read side only selects and the write side only calls the one RPC through a Server Action", () => {
+    const queries = src("lib/notifications/queries.ts");
+    expect(queries).not.toMatch(/\.(insert|update|upsert|delete|rpc)\(/);
+    expect(queries).not.toMatch(/console\./);
+    expect(src("lib/notifications/service.ts")).toContain('rpc("parent_mark_notifications_read"');
+    expect(src("lib/notifications/service.ts")).not.toMatch(/\.from\(|\.(insert|update|delete)\(/);
+    expect(src("lib/notifications/actions.ts")).toMatch(/^"use server"/);
+  });
+  it("the list uses plain forms (no client JavaScript) and never renders raw metadata", () => {
+    const card = src("components/notifications/notification-list.tsx");
+    expect(card).toContain('data-testid="notifications-card"');
+    expect(card).not.toMatch(/"use client"|onClick|dangerouslySetInnerHTML|supabase|metadata/i);
+    expect(src("lib/notifications/notifications.ts")).not.toMatch(/JSON\.stringify/);
+  });
+  it("the layout and the dashboard read the unread count without ever failing the page", () => {
+    expect(src("app/(app)/layout.tsx")).toContain("loadUnreadCount()");
+    expect(src("app/(app)/dashboard/page.tsx")).toContain("alertsValue(unread)");
+    expect(src("lib/notifications/queries.ts")).toMatch(/catch \{\s*return null;/);
+  });
+});

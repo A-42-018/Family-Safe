@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
 import { needsMfa } from "@/lib/auth/routes";
+import { loadUnreadCount } from "@/lib/notifications/queries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 
@@ -18,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   return (
-    <AppShell email={data.user.email ?? "Account"} theme={theme}>
+    <AppShell email={data.user.email ?? "Account"} theme={theme} unread={await loadUnreadCount()}>
       {children}
     </AppShell>
   );

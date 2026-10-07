@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
-import { EmptyState } from "@/components/shell/empty-state";
+import { AutoRefresh } from "@/components/devices/auto-refresh";
+import { NotificationList } from "@/components/notifications/notification-list";
 import { PageHeader } from "@/components/shell/page-header";
+import { parseNotificationsLimit } from "@/lib/notifications/notifications";
+import { loadNotifications, loadUnreadCount } from "@/lib/notifications/queries";
 
 export const metadata: Metadata = { title: "Notifications" };
 
-export default function NotificationsPage() {
+type SearchParams = Record<string, string | string[] | undefined>;
+
+export default async function NotificationsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const limit = parseNotificationsLimit(await searchParams);
+  const [page, unread] = await Promise.all([loadNotifications(limit), loadUnreadCount()]);
   return (
     <>
       <PageHeader title="Notifications" description="Alerts about your family's devices." />
-      <EmptyState icon="bell" title="You're all caught up" description="Alerts such as low battery or a device going offline will appear here." />
+      <AutoRefresh />
+      <NotificationList page={page} unread={unread} limit={limit} />
     </>
   );
 }

@@ -10,6 +10,8 @@ import { summarizeDevices } from "@/lib/devices/status";
 import { loadAllDevices, loadTodayScreenTime } from "@/lib/devices/queries";
 import { summarizeToday, todayHint, todayValue } from "@/lib/devices/screen-time";
 import { loadFamilyOverview } from "@/lib/family/queries";
+import { alertsHint, alertsValue } from "@/lib/notifications/notifications";
+import { loadUnreadCount } from "@/lib/notifications/queries";
 import { loadRestrictionsInput } from "@/lib/rules/queries";
 import { restrictionsHint, restrictionsValue, summarizeRestrictions } from "@/lib/rules/rules";
 import { loadScheduleCounts } from "@/lib/schedules/queries";
@@ -24,6 +26,7 @@ export default async function DashboardPage() {
   const sum = summarizeDevices(devices, now);
   const today = summarizeToday(await loadTodayScreenTime(devices), now);
   const restrictions = summarizeRestrictions({ ...(await loadRestrictionsInput(devices)), appRuleCounts: await loadAppRuleCounts(devices), scheduleCounts: await loadScheduleCounts(devices) });
+  const unread = await loadUnreadCount();
   const reporting = sum.online + sum.offline > 0;
   const waitingNote = sum.waiting > 0 ? ` ${sum.waiting} waiting for first check-in.` : "";
   return (
@@ -42,7 +45,7 @@ export default async function DashboardPage() {
         <StatCard label="Battery" icon="battery" hint="Lowest level among devices." value={sum.lowestBattery !== null && reporting ? `${sum.lowestBattery}%` : undefined} />
         <StatCard label="Last location" icon="map-pin" hint="Only shown when you turn it on for a device." />
         <StatCard label="Active restrictions" icon="lock" hint={restrictionsHint(restrictions)} value={restrictionsValue(restrictions)} />
-        <StatCard label="Alerts" icon="alert" hint="Needs your attention." />
+        <StatCard label="Alerts" icon="alert" hint={alertsHint(unread)} value={alertsValue(unread)} />
       </section>
       {children.length === 0 ? (
         <div className="mt-6">
