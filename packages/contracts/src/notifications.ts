@@ -25,6 +25,24 @@ export const NOTIFICATION_RETENTION_DAYS = 90;
 /** At most this many notifications per parent are kept; older ones go when a new one arrives (29a-2). */
 export const NOTIFICATIONS_PER_PARENT_MAX = 500;
 
+/** These two can never be switched off (29a-2): a stored "off" is ignored and the preference RPC refuses it. */
+export const NOTIFICATION_ALWAYS_ON = ["EMERGENCY", "SECURITY_EVENT"] as const satisfies readonly NotificationType[];
+export const isAlwaysOn = (type: NotificationType): boolean => (NOTIFICATION_ALWAYS_ON as readonly string[]).includes(type);
+
+/** A new notification of the same type for the same device inside this window is dropped (29a-2); 0 = never deduped. */
+export const NOTIFICATION_DEDUPE_MINUTES: Record<NotificationType, number> = {
+  DEVICE_OFFLINE: 30,
+  BATTERY_LOW: 360,
+  EMERGENCY: 0,
+  GEOFENCE_ENTER: 0,
+  GEOFENCE_EXIT: 0,
+  PERMISSION_REVOKED: 60,
+  LIMIT_REACHED: 60,
+  BLOCKED_APP_ATTEMPT: 10,
+  DEVICE_ENROLLED: 0,
+  SECURITY_EVENT: 0,
+};
+
 export const notificationTypeSchema = z.enum(NOTIFICATION_TYPES);
 
 /** Parent input for `parent_set_notification_preference`. */
