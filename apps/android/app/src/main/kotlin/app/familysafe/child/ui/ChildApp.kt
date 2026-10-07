@@ -62,6 +62,7 @@ fun ChildApp(state: ChildAppState, versionName: String, enrollmentViewModelFacto
                         state.limit,
                         state.appRules,
                         state.schedules,
+                        state.enforcement,
                     ) {
                         nav.navigate(it.route)
                     }

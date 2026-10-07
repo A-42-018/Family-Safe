@@ -14,6 +14,7 @@ internal data class DeviceInfoRequestDto(
     @SerialName("security_patch") val securityPatch: String?,
     @SerialName("storage_total_mb") val storageTotalMb: Long?,
     @SerialName("storage_free_mb") val storageFreeMb: Long?,
+    @SerialName("managed_mode") val managedMode: Boolean,
 ) {
     override fun toString(): String = "DeviceInfoRequestDto"
 }

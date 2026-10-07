@@ -24,6 +24,8 @@ class DeviceDetails(
     val securityPatch: String?,
     val storageTotalMb: Long?,
     val storageFreeMb: Long?,
+    /** FamilySafe is the Device Owner of this phone (managed mode, Track B). A self-report, shown to the parent. */
+    val managedMode: Boolean = false,
 ) {
     /**
      * What may leave the device, or null when the API level is unusable (then nothing is sent at all).
@@ -35,16 +37,23 @@ class DeviceDetails(
         if (sdkLevel !in DeviceDetailsLimits.SDK_MIN..DeviceDetailsLimits.SDK_MAX) return null
         val patch = SecurityPatchParser.normalize(securityPatch)?.takeIf { !LocalDate.parse(it).isAfter(todayUtc) }
         val storage = StorageMath.pair(storageTotalMb, storageFreeMb)
-        return DeviceDetails(sdkLevel, patch, storage?.first, storage?.second)
+        return DeviceDetails(sdkLevel, patch, storage?.first, storage?.second, managedMode)
     }
 
     override fun equals(other: Any?): Boolean = other is DeviceDetails &&
         sdkLevel == other.sdkLevel &&
         securityPatch == other.securityPatch &&
         storageTotalMb == other.storageTotalMb &&
-        storageFreeMb == other.storageFreeMb
+        storageFreeMb == other.storageFreeMb &&
+        managedMode == other.managedMode
 
-    override fun hashCode(): Int = listOf(sdkLevel, securityPatch, storageTotalMb, storageFreeMb).hashCode()
+    override fun hashCode(): Int = listOf(
+        sdkLevel,
+        securityPatch,
+        storageTotalMb,
+        storageFreeMb,
+        managedMode,
+    ).hashCode()
 
     override fun toString(): String = "DeviceDetails"
 }
@@ -99,9 +108,12 @@ class DeviceInfoReport(val details: DeviceDetails, val sentAtEpochMillis: Long) 
     override fun toString(): String = "DeviceInfoReport"
 }
 
-/** Single-string form of a [DeviceInfoReport] for the sealed store: `sentAt;sdk;patch;totalMb;freeMb` (empty=null). */
+/**
+ * Single-string form of a [DeviceInfoReport] for the sealed store: `sentAt;sdk;patch;totalMb;freeMb;managed` (empty =
+ * null, managed is `0`/`1`). The older five-field form reads as "nothing sent yet" so the new field is reported.
+ */
 object DeviceInfoReportCodec {
-    private const val FIELDS = 5
+    private const val FIELDS = 6
 
     fun encode(report: DeviceInfoReport): String = with(report.details) {
         listOf(
@@ -110,6 +122,7 @@ object DeviceInfoReportCodec {
             securityPatch.orEmpty(),
             storageTotalMb?.toString().orEmpty(),
             storageFreeMb?.toString().orEmpty(),
+            if (managedMode) "1" else "0",
         ).joinToString(";")
     }
 
@@ -122,11 +135,16 @@ object DeviceInfoReportCodec {
         val patch = parts[2].ifEmpty { null }
         val total = parts[3].ifEmpty { null }?.let { it.toLongOrNull() ?: return null }
         val free = parts[4].ifEmpty { null }?.let { it.toLongOrNull() ?: return null }
+        val managed = when (parts[5]) {
+            "1" -> true
+            "0" -> false
+            else -> return null
+        }
         if (patch != null && SecurityPatchParser.normalize(patch) != patch) return null
         if (sdk !in DeviceDetailsLimits.SDK_MIN..DeviceDetailsLimits.SDK_MAX) return null
         if ((total == null) != (free == null)) return null
         if (total != null && free != null && StorageMath.pair(total, free) != (total to free)) return null
-        return DeviceInfoReport(DeviceDetails(sdk, patch, total, free), sentAt)
+        return DeviceInfoReport(DeviceDetails(sdk, patch, total, free, managed), sentAt)
     }
 }
 
@@ -134,11 +152,14 @@ object DeviceInfoReportCodec {
 object DeviceInfoPolicy {
     /**
      * After an OS or security-patch update the parent should not wait up to a day: the API level or patch date now
-     * differs from what was last acknowledged. Storage is ignored on purpose (it changes constantly). No report yet
+     * differs from what was last acknowledged; the same for switching managed mode on or off. Storage is ignored on
+     * purpose (it changes constantly). No report yet
      * is NOT "stale": the freshly enqueued periodic job uploads immediately, an extra request would only duplicate it.
      */
     fun needsUploadNow(last: DeviceInfoReport?, current: DeviceDetails): Boolean {
         if (last == null) return false
-        return last.details.sdkLevel != current.sdkLevel || last.details.securityPatch != current.securityPatch
+        return last.details.sdkLevel != current.sdkLevel ||
+            last.details.securityPatch != current.securityPatch ||
+            last.details.managedMode != current.managedMode
     }
 }

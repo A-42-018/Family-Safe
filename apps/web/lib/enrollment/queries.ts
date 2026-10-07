@@ -22,6 +22,8 @@ export interface DeviceRow {
   storageTotalMb: number | null;
   storageFreeMb: number | null;
   infoUpdatedAt: string | null;
+  /** T4: the app reported it is the Device Owner (managed mode). A self-report; null = not reported yet. */
+  managedMode: boolean | null;
 }
 
 export type RawDevice = {
@@ -30,9 +32,10 @@ export type RawDevice = {
   battery_level: number | null; is_charging: boolean | null; network_type: string | null; app_version: string | null;
   sdk_level: number | null; security_patch: string | null; storage_total_mb: number | null; storage_free_mb: number | null;
   info_updated_at: string | null;
+  managed_mode?: boolean | null;
 };
 export const DEVICE_COLUMNS =
-  "id,device_name,manufacturer,model,android_version,device_status,enrollment_status,last_seen_at,battery_level,is_charging,network_type,app_version,sdk_level,security_patch,storage_total_mb,storage_free_mb,info_updated_at"; // never fcm/credentials
+  "id,device_name,manufacturer,model,android_version,device_status,enrollment_status,last_seen_at,battery_level,is_charging,network_type,app_version,sdk_level,security_patch,storage_total_mb,storage_free_mb,info_updated_at,managed_mode"; // never fcm/credentials
 const COLUMNS = DEVICE_COLUMNS;
 
 export const toDeviceRow = (d: RawDevice): DeviceRow => ({
@@ -41,6 +44,7 @@ export const toDeviceRow = (d: RawDevice): DeviceRow => ({
   batteryLevel: d.battery_level, isCharging: d.is_charging, networkType: d.network_type, appVersion: d.app_version,
   sdkLevel: d.sdk_level ?? null, securityPatch: d.security_patch ?? null, storageTotalMb: d.storage_total_mb ?? null,
   storageFreeMb: d.storage_free_mb ?? null, infoUpdatedAt: d.info_updated_at ?? null,
+  managedMode: d.managed_mode ?? null,
 });
 const toRow = toDeviceRow;
 type Raw = RawDevice;

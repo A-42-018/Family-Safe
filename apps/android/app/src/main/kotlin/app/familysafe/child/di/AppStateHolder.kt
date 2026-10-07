@@ -7,6 +7,7 @@ import app.familysafe.child.domain.CachedScreenTimeConfig
 import app.familysafe.child.domain.ChildAppState
 import app.familysafe.child.domain.DeviceAuthState
 import app.familysafe.child.domain.DeviceInfoReport
+import app.familysafe.child.domain.EnforcementStatus
 import app.familysafe.child.domain.LimitStatus
 import app.familysafe.child.domain.PermissionSnapshot
 import app.familysafe.child.domain.ScheduleStatus
@@ -42,6 +43,7 @@ class AppStateHolder(
     limit: StateFlow<LimitStatus> = MutableStateFlow(LimitStatus.Unchecked),
     appRules: StateFlow<AppRuleStatus> = MutableStateFlow(AppRuleStatus.Unchecked),
     schedules: StateFlow<ScheduleStatus> = MutableStateFlow(ScheduleStatus.Unchecked),
+    enforcement: StateFlow<EnforcementStatus?> = MutableStateFlow(null),
 ) {
     private val enrollmentVersion = MutableStateFlow(0)
 
@@ -52,6 +54,7 @@ class AppStateHolder(
         val limit: LimitStatus,
         val appRules: AppRuleStatus,
         val schedules: ScheduleStatus,
+        val enforcement: EnforcementStatus?,
     )
 
     private class Shared(
@@ -63,8 +66,8 @@ class AppStateHolder(
     )
 
     private val rulesGroup =
-        combine(screenTime, limit, appRules, schedules) { cached, status, apps, sched ->
-            Rules(cached, status, apps, sched)
+        combine(screenTime, limit, appRules, schedules, enforcement) { cached, status, apps, sched, enforce ->
+            Rules(cached, status, apps, sched, enforce)
         }
 
     private val shared = combine(deviceInfo, appInventory, usage, usageAccess, rulesGroup) { a, b, c, d, e ->
@@ -92,6 +95,7 @@ class AppStateHolder(
             limit = reports.rules.limit,
             appRules = reports.rules.appRules,
             schedules = reports.rules.schedules,
+            enforcement = reports.rules.enforcement,
         )
     }.stateIn(
         scope = scope,
@@ -110,6 +114,7 @@ class AppStateHolder(
             limit = limit.value,
             appRules = appRules.value,
             schedules = schedules.value,
+            enforcement = enforcement.value,
         ),
     )
 

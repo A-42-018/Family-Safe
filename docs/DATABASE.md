@@ -95,7 +95,7 @@ All `SECURITY DEFINER`, `search_path=''`, `REVOKE`d from `public/anon/authentica
 Tests: `08_heartbeat.test.sql` (44).
 
 ### Device information (Phase 13a)
-Migration `20260929001200_device_info.sql` adds to `devices`: `sdk_level int (1–99)`, `security_patch date (≥ 2010-01-01)`, `storage_total_mb int (1–16777216)`, `storage_free_mb int (0–16777216)`, `info_updated_at timestamptz`; constraints `devices_storage_pair_chk` (both storage values or neither) and `devices_storage_free_le_total_chk`. All NULL until the device reports.
+Migration `20260929001200_device_info.sql` adds to `devices`: `sdk_level int (1–99)`, `security_patch date (≥ 2010-01-01)`, `storage_total_mb int (1–16777216)`, `storage_free_mb int (0–16777216)`, `info_updated_at timestamptz`; constraints `devices_storage_pair_chk` (both storage values or neither) and `devices_storage_free_le_total_chk`. All NULL until the device reports. Migration `20261007000100_managed_mode.sql` (T4) adds `managed_mode boolean` (NULL = not reported; parents read it, only the device RPC writes it) and the 6-argument overload `device_update_info(..., managed_mode)` (required flag, `22023` if NULL); the 5-argument form stays and never touches `managed_mode`.
 
 | Function | Behaviour |
 |---|---|

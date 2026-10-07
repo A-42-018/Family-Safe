@@ -189,6 +189,17 @@
     <string name="schedules_next">Next change: %1$s</string>
     <string name="schedules_zone_parent">Times are read in the time zone your parent chose: %1$s.</string>
     <string name="schedules_zone_phone">Times are read in this phone\'s own time zone: %1$s.</string>
+    <string name="managed_header">Managed mode</string>
+    <string name="managed_off">Managed mode is off on this phone. This app tells you about limits, app rules and schedules, but it cannot pause other apps.</string>
+    <string name="managed_on">Managed mode is on: this phone was set up so that FamilySafe can pause the apps your parent restricted. When you open a paused app, Android shows you a message.</string>
+    <string name="managed_paused_none">No apps are paused right now.</string>
+    <string name="managed_paused_row">%1$s: paused because %2$s</string>
+    <string name="managed_reason_blocked">your parent blocked it</string>
+    <string name="managed_reason_app_limit">it reached its daily limit</string>
+    <string name="managed_reason_daily_limit">today\'s screen-time limit is reached</string>
+    <string name="managed_reason_schedule">a schedule is in force</string>
+    <string name="managed_refused">Android did not allow pausing %1$d app(s).</string>
+    <string name="managed_release">When this phone is disconnected from your parent, every app FamilySafe paused is turned back on.</string>
     <string name="limit_header">Today\'s screen time</string>
     <string name="limit_checking">Checking today\'s limit…</string>
     <string name="limit_used_of">Screen time today: %1$s of %2$s</string>

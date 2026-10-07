@@ -38,7 +38,10 @@ class DeviceInfoContractDriftTest {
     @Test
     fun `request DTO has exactly the fields of deviceInfoRequestSchema`() {
         val contract = keysOf(schemaBody(ts, "deviceInfoRequestSchema"))
-        assertEquals(setOf("sdk_level", "security_patch", "storage_total_mb", "storage_free_mb"), contract)
+        assertEquals(
+            setOf("sdk_level", "security_patch", "storage_total_mb", "storage_free_mb", "managed_mode"),
+            contract,
+        )
         assertEquals(contract, serialNames("DeviceInfoRequestDto"))
         assertEquals(contract, keysOf(schemaBody(edge, "DeviceInfoSchema")))
     }

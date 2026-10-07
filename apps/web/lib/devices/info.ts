@@ -97,3 +97,22 @@ export function storageSummary(d: Pick<DeviceInfoInput, "storageTotalMb" | "stor
   if (usedText === null || freeText === null || totalText === null) return null;
   return { usedPercent: Math.min(100, Math.max(0, Math.round((used / total) * 100))), usedText, freeText, totalText };
 }
+
+export interface ModeText {
+  label: string;
+  detail: string;
+}
+
+/**
+ * What the app said about managed mode (T4). A self-report, never proof: the wording says "reported", and "enforces"
+ * only appears for a device that reported managed mode. `null` (older app, nothing uploaded yet) is "not reported".
+ */
+export function managedModeText(managed: boolean | null): ModeText {
+  if (managed === true) {
+    return { label: "Managed mode (reported)", detail: "The app reported that this phone is set up so it can pause apps you block or limit. Your child sees which apps are paused." };
+  }
+  if (managed === false) {
+    return { label: "Standard (reported)", detail: "The app informs your child about limits and schedules. It cannot pause other apps on a standard phone." };
+  }
+  return { label: "Not reported yet", detail: "The app has not said whether it can pause apps on this phone." };
+}

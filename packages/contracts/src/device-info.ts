@@ -30,6 +30,8 @@ export const deviceInfoRequestSchema = z
     security_patch: z.string().refine(isSecurityPatchDate, "invalid date").nullable(),
     storage_total_mb: z.number().int().min(1).max(STORAGE_MB_MAX).nullable(),
     storage_free_mb: z.number().int().min(0).max(STORAGE_MB_MAX).nullable(),
+    /** T4: `true` when FamilySafe is the Device Owner of the phone (managed mode, Track B). A self-report, never proof. */
+    managed_mode: z.boolean(),
   })
   .strict()
   .superRefine((v, ctx) => {

@@ -9,7 +9,7 @@ const DEVICE = "d0000000-0000-4000-8000-0000000000aa";
 const OTHER = "d0000000-0000-4000-8000-0000000000bb";
 const CRED = "e0000000-0000-4000-8000-000000000001";
 const NOW = Date.parse("2026-09-30T12:00:00Z");
-const INFO: DeviceInfo = { sdk_level: 36, security_patch: "2026-09-05", storage_total_mb: 128000, storage_free_mb: 64000 };
+const INFO: DeviceInfo = { sdk_level: 36, security_patch: "2026-09-05", storage_total_mb: 128000, storage_free_mb: 64000, managed_mode: false };
 
 class Fake {
   active = new Set<string>([`${DEVICE}:${CRED}`, `${OTHER}:${CRED}`]);
@@ -69,7 +69,7 @@ Deno.test("device-info: valid upload -> 200, recorded for the device in the toke
 
 Deno.test("device-info: unknown patch and storage (explicit nulls) are accepted", async () => {
   const { fake, deps } = setup();
-  const body = { sdk_level: 31, security_patch: null, storage_total_mb: null, storage_free_mb: null };
+  const body = { sdk_level: 31, security_patch: null, storage_total_mb: null, storage_free_mb: null, managed_mode: false };
   assertEquals((await call(deps, { body })).status, 200);
   assertEquals(fake.recorded[0].info, body);
 });
@@ -133,6 +133,7 @@ Deno.test("device-info: validation rejects bad values and bodies", async () => {
     { ...INFO, storage_free_mb: 128001 },
     { ...INFO, storage_total_mb: null }, { ...INFO, storage_free_mb: null },
     { sdk_level: 34, security_patch: null, storage_total_mb: null }, { sdk_level: 34 }, {}, [], null,
+    { sdk_level: 34, security_patch: null, storage_total_mb: null, storage_free_mb: null }, { ...INFO, managed_mode: "true" }, { ...INFO, managed_mode: null }, { ...INFO, managed_mode: 1 },
   ];
   for (const body of bad) {
     resetRateLimits(); // this test is about validation, not the per-device limit
@@ -155,7 +156,7 @@ Deno.test("device-info: free == total and the largest allowed values are accepte
   const { fake, deps } = setup();
   assertEquals((await call(deps, { body: { ...INFO, storage_total_mb: 1, storage_free_mb: 1 } })).status, 200);
   resetRateLimits();
-  assertEquals((await call(deps, { body: { sdk_level: 99, security_patch: "2010-01-01", storage_total_mb: 16777216, storage_free_mb: 0 } })).status, 200);
+  assertEquals((await call(deps, { body: { sdk_level: 99, security_patch: "2010-01-01", storage_total_mb: 16777216, storage_free_mb: 0, managed_mode: true } })).status, 200);
   assertEquals(fake.recorded.length, 2);
 });
 

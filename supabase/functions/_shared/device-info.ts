@@ -22,6 +22,7 @@ export const DeviceInfoSchema = z.object({
   security_patch: z.string().refine(isSecurityPatchDate, "invalid date").nullable(),
   storage_total_mb: z.number().int().min(1).max(STORAGE_MB_MAX).nullable(),
   storage_free_mb: z.number().int().min(0).max(STORAGE_MB_MAX).nullable(),
+  managed_mode: z.boolean(),
 }).strict().superRefine((v, ctx) => {
   if ((v.storage_total_mb === null) !== (v.storage_free_mb === null)) {
     ctx.addIssue({ code: "custom", message: "storage values must be given together", path: ["storage_free_mb"] });

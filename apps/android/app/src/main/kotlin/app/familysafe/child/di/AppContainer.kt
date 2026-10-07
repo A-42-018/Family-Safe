@@ -139,7 +139,9 @@ class AppContainer(private val context: Context) {
     /** What the last acknowledged device-info upload contained; written only by [deviceInfoRunner]. */
     val deviceInfoReportStore: DeviceInfoReportStore by lazy { DeviceInfoReportStore(secureStore) }
 
-    private val deviceDetailsSource: DeviceDetailsSource by lazy { AndroidDeviceDetailsSource() }
+    private val deviceDetailsSource: DeviceDetailsSource by lazy {
+        AndroidDeviceDetailsSource(AndroidManagedModeDetector(context))
+    }
 
     val deviceInfoRunner: DeviceInfoRunner by lazy {
         DeviceInfoRunner(
@@ -293,6 +295,7 @@ class AppContainer(private val context: Context) {
             limitStatusStore.status,
             appRuleStatusStore.status,
             scheduleStatusStore.status,
+            enforcementStatusStore.status,
         )
     }
 

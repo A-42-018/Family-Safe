@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { apiLevelText, formatPatchDate, hasReportedInfo, infoUpdatedText, isInfoStale, patchHint, storageSummary } from "@/lib/devices/info";
+import { apiLevelText, formatPatchDate, hasReportedInfo, infoUpdatedText, isInfoStale, managedModeText, patchHint, storageSummary } from "@/lib/devices/info";
 import { formatLastSeen } from "@/lib/enrollment/format";
 import type { DeviceRow } from "@/lib/enrollment/queries";
 
-type Props = { device: Pick<DeviceRow, "androidVersion" | "sdkLevel" | "securityPatch" | "storageTotalMb" | "storageFreeMb" | "infoUpdatedAt">; now?: Date };
+type Props = { device: Pick<DeviceRow, "androidVersion" | "sdkLevel" | "securityPatch" | "storageTotalMb" | "storageFreeMb" | "infoUpdatedAt" | "managedMode">; now?: Date };
 
 /** "Device information" card (Phase 13c). Presentational: every value comes from `lib/devices/info`. */
 export function DeviceInfoCard({ device, now = new Date() }: Props) {
@@ -12,6 +12,7 @@ export function DeviceInfoCard({ device, now = new Date() }: Props) {
   const patchDate = formatPatchDate(device.securityPatch);
   const hint = patchHint(device.securityPatch, now);
   const api = apiLevelText(device.sdkLevel);
+  const mode = managedModeText(device.managedMode);
   const os = [device.androidVersion ? `Android ${device.androidVersion}` : null, api].filter(Boolean).join(" · ");
   return (
     <Card>
@@ -35,6 +36,11 @@ export function DeviceInfoCard({ device, now = new Date() }: Props) {
               <div>
                 <dt className="text-xs text-muted-foreground">Security patch</dt>
                 <dd className="text-sm font-medium">{patchDate ?? "Unknown"}</dd>
+              </div>
+              <div className="sm:col-span-2" data-testid="managed-mode">
+                <dt className="text-xs text-muted-foreground">Enforcement</dt>
+                <dd className="text-sm font-medium">{mode.label}</dd>
+                <dd className="text-xs text-muted-foreground">{mode.detail}</dd>
               </div>
             </dl>
             {hint && hint.level !== "recent" ? <p className="text-sm text-muted-foreground">{hint.text}</p> : null}

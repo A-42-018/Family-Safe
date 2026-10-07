@@ -25,9 +25,11 @@ import app.familysafe.child.domain.CachedScreenTimeConfig
 import app.familysafe.child.domain.ConfigFreshness
 import app.familysafe.child.domain.DeviceAuthState
 import app.familysafe.child.domain.DeviceInfoReport
+import app.familysafe.child.domain.EnforcementStatus
 import app.familysafe.child.domain.InstalledApp
 import app.familysafe.child.domain.LimitLevel
 import app.familysafe.child.domain.LimitStatus
+import app.familysafe.child.domain.ManagedModeState
 import app.familysafe.child.domain.ScheduleStatus
 import app.familysafe.child.domain.UsageDisplay
 import app.familysafe.child.domain.UsageReport
@@ -51,6 +53,7 @@ fun DeviceStatusScreen(
     limit: LimitStatus,
     appRules: AppRuleStatus,
     schedules: ScheduleStatus,
+    enforcement: EnforcementStatus?,
     onOpen: (Destination) -> Unit,
 ) {
     ScreenScaffold(stringResource(R.string.title_device_status), onBack = null) { padding ->
@@ -79,6 +82,8 @@ fun DeviceStatusScreen(
                 AppRules(appRules, appInventory)
                 HorizontalDivider()
                 ParentSchedules(screenTime, schedules)
+                HorizontalDivider()
+                ManagedMode(enforcement, appInventory)
             }
             HorizontalDivider()
             Text(stringResource(R.string.device_status_menu_header), style = MaterialTheme.typography.titleSmall)
@@ -438,4 +443,35 @@ private fun ParentSchedules(cached: CachedScreenTimeConfig?, status: ScheduleSta
             }
         }
     }
+}
+
+@Composable
+private fun ManagedMode(status: EnforcementStatus?, inventory: AppInventoryReport?) {
+    Text(stringResource(R.string.managed_header), style = MaterialTheme.typography.titleSmall)
+    if (status == null || status.mode != ManagedModeState.DEVICE_OWNER) {
+        Text(stringResource(R.string.managed_off), style = MaterialTheme.typography.bodyMedium)
+        return
+    }
+    Text(stringResource(R.string.managed_on), style = MaterialTheme.typography.bodyMedium)
+    if (status.paused.isEmpty()) {
+        Text(stringResource(R.string.managed_paused_none), style = MaterialTheme.typography.bodyMedium)
+    } else {
+        status.paused.entries.sortedBy { it.key }.forEach { (pkg, reason) ->
+            Text(
+                stringResource(
+                    R.string.managed_paused_row,
+                    AppRuleLabels.labelFor(pkg, inventory),
+                    stringResource(ManagedModeFormat.reasonText(reason)),
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+    if (status.refused.isNotEmpty()) {
+        Text(
+            stringResource(R.string.managed_refused, status.refused.size),
+            style = MaterialTheme.typography.labelLarge,
+        )
+    }
+    Text(stringResource(R.string.managed_release), style = MaterialTheme.typography.labelLarge)
 }

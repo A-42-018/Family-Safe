@@ -78,8 +78,11 @@ class DeviceDetailsTest {
         assertEquals(full.details, back.details)
         assertEquals(full.sentAtEpochMillis, back.sentAtEpochMillis)
         val sparse = DeviceInfoReport(DeviceDetails(33, null, null, null), 9L)
-        assertEquals("9;33;;;", DeviceInfoReportCodec.encode(sparse))
-        assertEquals(sparse.details, DeviceInfoReportCodec.decode("9;33;;;")!!.details)
+        assertEquals("9;33;;;;0", DeviceInfoReportCodec.encode(sparse))
+        assertEquals(sparse.details, DeviceInfoReportCodec.decode("9;33;;;;0")!!.details)
+        val managed = DeviceInfoReport(DeviceDetails(33, null, null, null, managedMode = true), 9L)
+        assertEquals("9;33;;;;1", DeviceInfoReportCodec.encode(managed))
+        assertEquals(managed.details, DeviceInfoReportCodec.decode("9;33;;;;1")!!.details)
     }
 
     @Test
@@ -87,18 +90,22 @@ class DeviceDetailsTest {
         val junk = listOf(
             null, "", "x", "1;2;3", "0;34;;;", "-1;34;;;", "5;abc;;;", "5;100;;;", "5;34;2025-02-30;;",
             "5;34;;10;", "5;34;;;10", "5;34;;10;20", "5;34;;x;y", "5;34;;10;5;extra",
+            // the older five-field form, and a managed flag that is not 0 or 1
+            "9;33;;;", "9;33;;;;2", "9;33;;;;true", "9;33;;;;", "9;33;;;;0;0",
         )
         for (text in junk) assertNull(DeviceInfoReportCodec.decode(text), text)
     }
 
     @Test
-    fun `update policy compares api level and patch only`() {
+    fun `update policy compares api level, patch and managed mode only`() {
         val last = DeviceInfoReport(DeviceDetails(34, "2025-09-05", 100, 50), 5)
         assertFalse(DeviceInfoPolicy.needsUploadNow(null, DeviceDetails(34, "2025-09-05", 100, 50)))
         assertFalse(DeviceInfoPolicy.needsUploadNow(last, DeviceDetails(34, "2025-09-05", 999, 1)))
         assertTrue(DeviceInfoPolicy.needsUploadNow(last, DeviceDetails(35, "2025-09-05", 100, 50)))
         assertTrue(DeviceInfoPolicy.needsUploadNow(last, DeviceDetails(34, "2025-10-05", 100, 50)))
         assertTrue(DeviceInfoPolicy.needsUploadNow(last, DeviceDetails(34, null, 100, 50)))
+        // switching managed mode on (or off) is reported without waiting a day
+        assertTrue(DeviceInfoPolicy.needsUploadNow(last, DeviceDetails(34, "2025-09-05", 100, 50, managedMode = true)))
     }
 
     @Test

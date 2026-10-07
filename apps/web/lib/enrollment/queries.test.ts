@@ -26,7 +26,7 @@ describe("fetchDevicesForChild", () => {
     expect(spy.columns).not.toMatch(/fcm|token|credential|hash/i);
     expect(rows).toEqual([{ id: "a", name: "Phone a", manufacturer: "Google", model: "Pixel 8", androidVersion: "15", deviceStatus: "ONLINE", enrollmentStatus: "ENROLLED", lastSeenAt: null,
       batteryLevel: 55, isCharging: true, networkType: "CELLULAR", appVersion: "0.12.0",
-      sdkLevel: null, securityPatch: null, storageTotalMb: null, storageFreeMb: null, infoUpdatedAt: null }]);
+      sdkLevel: null, securityPatch: null, storageTotalMb: null, storageFreeMb: null, infoUpdatedAt: null, managedMode: null }]);
   });
   it("lists revoked devices after active ones, keeping order inside each group", async () => {
     const rows = await fetchDevicesForChild(client({ data: [raw("r1", "REVOKED"), raw("a1", "ENROLLED"), raw("r2", "REVOKED"), raw("a2", "PENDING")] }), "c");

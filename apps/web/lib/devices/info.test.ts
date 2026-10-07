@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatLastSeen } from "@/lib/enrollment/format";
 import {
-  apiLevelText, formatPatchDate, formatStorageMb, hasReportedInfo, infoUpdatedText, INFO_STALE_SECONDS, isInfoStale, patchAgeDays, patchHint, storageSummary,
+  apiLevelText, formatPatchDate, formatStorageMb, hasReportedInfo, infoUpdatedText, INFO_STALE_SECONDS, isInfoStale, managedModeText, patchAgeDays, patchHint, storageSummary,
 } from "./info";
 
 const now = new Date("2026-09-30T12:00:00Z");
@@ -74,5 +74,23 @@ describe("storage", () => {
   it("inconsistent or missing pair → null (never a made-up bar)", () => {
     const bad: [number | null, number | null][] = [[null, null], [1000, null], [null, 5], [0, 0], [1000, 1001], [1000, -1], [Number.NaN, 1]];
     for (const [t, f] of bad) expect(storageSummary({ storageTotalMb: t, storageFreeMb: f }), `${t}/${f}`).toBeNull();
+  });
+});
+
+describe("managedModeText (T4)", () => {
+  it("true says the app reported it can pause apps, and never claims proof", () => {
+    const t = managedModeText(true);
+    expect(t.label).toBe("Managed mode (reported)");
+    expect(t.detail).toMatch(/pause apps you block or limit/);
+    expect(`${t.label} ${t.detail}`).not.toMatch(/\b(secure|safe|protected|guaranteed)\b|cannot be bypassed|locked out|unbreakable/i);
+  });
+  it("false says it only informs", () => {
+    const t = managedModeText(false);
+    expect(t.label).toBe("Standard (reported)");
+    expect(t.detail).toMatch(/cannot pause other apps/);
+    expect(t.detail).not.toMatch(/enforces/i);
+  });
+  it("null (older app / nothing uploaded) is not reported", () => {
+    expect(managedModeText(null).label).toBe("Not reported yet");
   });
 });

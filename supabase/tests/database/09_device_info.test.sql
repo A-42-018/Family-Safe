@@ -26,7 +26,7 @@ select col_is_null('public','devices','sdk_level','sdk_level is NULL until the d
 select ok(has_function_privilege('service_role','public.device_update_info(uuid,int,date,int,int)','execute'), 'service_role can execute device_update_info');
 select ok(not has_function_privilege('authenticated','public.device_update_info(uuid,int,date,int,int)','execute'), 'authenticated cannot execute device_update_info');
 select ok(not has_function_privilege('anon','public.device_update_info(uuid,int,date,int,int)','execute'), 'anon cannot execute device_update_info');
-select ok((select p.prosecdef and p.proconfig @> array['search_path=""'] from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='device_update_info'), 'device_update_info is SECURITY DEFINER with an empty search_path');
+select ok((select bool_and(p.prosecdef and p.proconfig @> array['search_path=""']) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='device_update_info'), 'device_update_info is SECURITY DEFINER with an empty search_path');
 select throws_ok($$update public.devices set sdk_level = 0 where id = 'd0000000-0000-4000-8000-0000000000a1'$$, '23514', null, 'CHECK: sdk_level 0 rejected');
 select throws_ok($$update public.devices set sdk_level = 100 where id = 'd0000000-0000-4000-8000-0000000000a1'$$, '23514', null, 'CHECK: sdk_level 100 rejected');
 select throws_ok($$update public.devices set security_patch = date '2009-12-31' where id = 'd0000000-0000-4000-8000-0000000000a1'$$, '23514', null, 'CHECK: security_patch before 2010 rejected');

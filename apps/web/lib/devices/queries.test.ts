@@ -42,7 +42,7 @@ describe("fetchDevice", () => {
   it("maps device-information columns and selects exactly the five contract columns", async () => {
     const spy = { columns: "", filters: [] as [string, unknown][] };
     const d = await fetchDevice(client({ data: raw("a") }, spy), "a");
-    for (const c of ["sdk_level", "security_patch", "storage_total_mb", "storage_free_mb", "info_updated_at"]) expect(spy.columns).toContain(c);
+    for (const c of ["sdk_level", "security_patch", "storage_total_mb", "storage_free_mb", "info_updated_at", "managed_mode"]) expect(spy.columns).toContain(c);
     expect(d).toMatchObject({ sdkLevel: 35, securityPatch: "2026-09-05", storageTotalMb: 102400, storageFreeMb: 25600, infoUpdatedAt: "2026-09-30T06:00:00Z" });
   });
   it("keeps null device-information columns null (also when the keys are absent)", async () => {

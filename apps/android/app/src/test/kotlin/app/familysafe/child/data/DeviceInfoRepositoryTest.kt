@@ -12,6 +12,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class DeviceInfoRepositoryTest {
+    private val managedFalse = ""","managed_mode":false}"""
+    private val managedTrue = ""","managed_mode":true}"""
+
     private class FakeHttp(var next: () -> AuthedOutcome) : DeviceHttp {
         val calls = mutableListOf<Pair<String, String>>()
 
@@ -28,14 +31,25 @@ class DeviceInfoRepositoryTest {
         AuthedOutcome.Completed(RawResponse(status, body, retryAfter))
 
     @Test
-    fun `posts exactly the four contract fields to device-info`() {
+    fun `posts exactly the five contract fields to device-info`() {
         val http = FakeHttp { completed(200) }
         runSuspend { repo(http).send(details) }
         val (endpoint, body) = http.calls.single()
         assertEquals("device-info", endpoint)
         assertEquals(
-            """{"sdk_level":34,"security_patch":"2025-09-05","storage_total_mb":110000,"storage_free_mb":50000}""",
+            """{"sdk_level":34,"security_patch":"2025-09-05",""" +
+                """"storage_total_mb":110000,"storage_free_mb":50000""" + managedFalse,
             body,
+        )
+    }
+
+    @Test
+    fun `managed mode goes on the wire as a boolean`() {
+        val http = FakeHttp { completed(200) }
+        runSuspend { repo(http).send(DeviceDetails(34, null, null, null, managedMode = true)) }
+        assertEquals(
+            """{"sdk_level":34,"security_patch":null,"storage_total_mb":null,"storage_free_mb":null""" + managedTrue,
+            http.calls.single().second,
         )
     }
 
@@ -44,7 +58,7 @@ class DeviceInfoRepositoryTest {
         val http = FakeHttp { completed(200) }
         runSuspend { repo(http).send(DeviceDetails(30, null, null, null)) }
         assertEquals(
-            """{"sdk_level":30,"security_patch":null,"storage_total_mb":null,"storage_free_mb":null}""",
+            """{"sdk_level":30,"security_patch":null,"storage_total_mb":null,"storage_free_mb":null""" + managedFalse,
             http.calls.single().second,
         )
     }
@@ -65,7 +79,7 @@ class DeviceInfoRepositoryTest {
         val result = runSuspend { repo(http).send(DeviceDetails(34, "2026-12-01", 10, 20)) }
         // A future patch date and an impossible storage pair both degrade to null.
         assertEquals(
-            """{"sdk_level":34,"security_patch":null,"storage_total_mb":null,"storage_free_mb":null}""",
+            """{"sdk_level":34,"security_patch":null,"storage_total_mb":null,"storage_free_mb":null""" + managedFalse,
             http.calls.single().second,
         )
         assertEquals(DeviceDetails(34, null, null, null), (result as DeviceInfoResult.Sent).shared)

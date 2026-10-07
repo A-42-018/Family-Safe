@@ -19,6 +19,7 @@ function build(): Deps {
         p_security_patch: info.security_patch,
         p_storage_total_mb: info.storage_total_mb,
         p_storage_free_mb: info.storage_free_mb,
+        p_managed_mode: info.managed_mode,
       });
       if (error) throw new Error("rpc_failed"); // never echo DB details to the device
       const row = Array.isArray(data) ? data[0] : null;

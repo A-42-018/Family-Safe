@@ -5,13 +5,15 @@ import android.os.Environment
 import android.os.StatFs
 import app.familysafe.child.domain.DeviceDetails
 import app.familysafe.child.domain.DeviceDetailsSource
+import app.familysafe.child.domain.ManagedModeDetector
+import app.familysafe.child.domain.ManagedModeState
 import app.familysafe.child.domain.StorageMath
 
 /**
  * Reads three facts that need NO permission: API level, security patch date and the size/free space of the
- * app-visible internal data partition. No identifiers, no file or app names, no location.
+ * app-visible internal data partition, plus whether this app is the Device Owner (managed mode). No identifiers, no file or app names, no location.
  */
-class AndroidDeviceDetailsSource : DeviceDetailsSource {
+class AndroidDeviceDetailsSource(private val managed: ManagedModeDetector) : DeviceDetailsSource {
     override fun current(): DeviceDetails {
         val storage = try {
             val stat = StatFs(Environment.getDataDirectory().path)
@@ -27,6 +29,7 @@ class AndroidDeviceDetailsSource : DeviceDetailsSource {
             securityPatch = Build.VERSION.SECURITY_PATCH,
             storageTotalMb = storage?.first,
             storageFreeMb = storage?.second,
+            managedMode = managed.state() == ManagedModeState.DEVICE_OWNER,
         )
     }
 }

@@ -24,6 +24,8 @@ data class ChildAppState(
     val appRules: AppRuleStatus = AppRuleStatus.Unchecked,
     /** The parent's schedules read against the clock, checked on this device (memory only). */
     val schedules: ScheduleStatus = ScheduleStatus.Unchecked,
+    /** What enforcement did last (managed mode pauses apps, every other phone only informs); null = not run yet. */
+    val enforcement: EnforcementStatus? = null,
 ) {
     val isEnrolled: Boolean get() = enrollment !is EnrollmentState.NotEnrolled
     val sharesAnything: Boolean get() = isEnrolled

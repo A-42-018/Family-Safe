@@ -21,6 +21,7 @@ class DeviceInfoRepository(
                 securityPatch = clean.securityPatch,
                 storageTotalMb = clean.storageTotalMb,
                 storageFreeMb = clean.storageFreeMb,
+                managedMode = clean.managedMode,
             ),
         )
         val outcome = try {
