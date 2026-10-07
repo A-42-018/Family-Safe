@@ -10,7 +10,7 @@
   "scripts": {
     "check:structure": "node scripts/check-structure.mjs",
     "check:secrets": "node scripts/check-no-secrets-in-web.mjs",
-    "test:functions": "cd supabase/functions && deno test --no-config --import-map=deno.json --allow-env _shared/ health/ auth-events/ enrollment-create/ enrollment-redeem/ device-revoke/ device-refresh/ device-heartbeat/ device-info/ device-permissions/ device-apps/ device-usage/ device-config/ device-app-events/ device-limit-events/ device-fcm-token/ device-commands/",
+    "test:functions": "cd supabase/functions && deno test --no-config --import-map=deno.json --allow-env _shared/ health/ auth-events/ enrollment-create/ enrollment-redeem/ device-revoke/ device-refresh/ device-heartbeat/ device-info/ device-permissions/ device-apps/ device-usage/ device-config/ device-app-events/ device-limit-events/ device-fcm-token/ device-commands/ commands-dispatch/",
     "test:db": "scripts/db/verify.sh",
     "check": "npm run check:structure && npm run check:secrets",
     "dev:web": "npm run dev -w @familysafe/web",

@@ -7,7 +7,8 @@ const EnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   DEVICE_JWT_SECRET: z.string().min(32, "DEVICE_JWT_SECRET must be >= 32 chars"),
   PAIRING_TOKEN_PEPPER: z.string().min(32, "PAIRING_TOKEN_PEPPER must be >= 32 chars"),
-  FCM_SERVICE_ACCOUNT_JSON: z.string().optional(), // required from Phase 20
+  FCM_SERVICE_ACCOUNT_JSON: z.string().optional(), // only `commands-dispatch` needs it (Phase 20a-3)
+  CRON_SECRET: z.string().min(32, "CRON_SECRET must be >= 32 chars").optional(), // shared with the scheduler that calls `commands-dispatch`
   ALLOWED_ORIGINS: z.string().default("http://localhost:3000"),
 });
 

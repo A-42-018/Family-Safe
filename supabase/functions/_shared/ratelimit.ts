@@ -63,6 +63,8 @@ export const RULES = {
   deviceFcmTokenIp: { name: "device-fcm-token-ip", limit: 60, windowSeconds: 300 }, // per IP, pre-auth
   deviceCommands: { name: "device-commands", limit: 60, windowSeconds: 3600 }, // per device (after auth); wake-up pulls + fallback pull + acks + retries
   deviceCommandsIp: { name: "device-commands-ip", limit: 120, windowSeconds: 300 }, // per IP, pre-auth
+  commandsDispatchIp: { name: "commands-dispatch-ip", limit: 30, windowSeconds: 300 }, // per IP, before the secret is checked
+  commandsDispatch: { name: "commands-dispatch", limit: 20, windowSeconds: 300 }, // global, after the secret matched
   location: { name: "location", limit: 60, windowSeconds: 900 },
   commands: { name: "commands", limit: 30, windowSeconds: 60 },
 } satisfies Record<string, RateLimitRule>;

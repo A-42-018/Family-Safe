@@ -34,3 +34,13 @@ export function parseQuery<S extends ZodTypeAny>(req: Request, schema: S): z.inf
 }
 
 export const uuidSchema = z.string().uuid();
+
+/** Constant-time string comparison: no early exit on the first difference or on a length mismatch. */
+export function safeEqual(a: string, b: string): boolean {
+  const x = new TextEncoder().encode(a);
+  const y = new TextEncoder().encode(b);
+  let diff = x.length ^ y.length;
+  const n = Math.max(x.length, y.length);
+  for (let i = 0; i < n; i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
+}
