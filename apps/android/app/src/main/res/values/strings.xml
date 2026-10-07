@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FamilySafe</string>
+
+    <!-- Shared -->
+    <string name="action_back">Back</string>
+    <string name="not_enrolled_title">Not enrolled yet</string>
+    <string name="not_enrolled_body">This device is not connected to a parent or guardian account, so nothing is being shared.</string>
+    <string name="transparency_note">FamilySafe is always visible on this device. It only shares what is listed in this app, and only after you and your parent or guardian have set it up together.</string>
+
+    <!-- Screen titles -->
+    <string name="title_device_status">Device status</string>
+    <string name="title_permissions">Permissions</string>
+    <string name="title_enrollment">Enrollment</string>
+    <string name="title_sync_status">Sync status</string>
+    <string name="title_safety">Safety</string>
+    <string name="title_about">About</string>
+
+    <!-- Device status -->
+    <string name="device_status_summary">Setup is not finished. FamilySafe is not sharing anything from this device.</string>
+    <string name="device_status_summary_enrolled">This device is connected to a parent or guardian account. FamilySafe shares only what is listed on this screen, on the Sync status screen and on the Permissions screen. Nothing else is collected yet. This device also receives the rules your parent sets; they are listed below.</string>
+    <string name="device_info_header">Device details shared with your parent</string>
+    <string name="device_info_intro">About once a day, and after a system update, this device sends only the items below. No serial number, phone number, advertising ID, network address or files are included.</string>
+    <string name="device_info_not_sent">Not sent yet.</string>
+    <string name="device_info_api_level">Android API level: %1$d</string>
+    <string name="device_info_patch">Security patch date: %1$s</string>
+    <string name="device_info_patch_unknown">Security patch date: not available on this device</string>
+    <string name="device_info_storage">Internal storage: %1$s GB free of %2$s GB</string>
+    <string name="device_info_storage_unknown">Internal storage: not available</string>
+    <string name="device_info_sent_at">Last sent: %1$s</string>
+    <string name="app_inventory_header">Apps shared with your parent</string>
+    <string name="app_inventory_intro">About once a day, and when apps are added or removed, this device sends the list of apps that have an icon on your home screen: the app name, its technical package name, its version and whether it came with the phone. No icons, install dates, usage times, data inside apps or messages are included. Apps without an icon are not listed.</string>
+    <string name="app_inventory_not_sent">Not sent yet.</string>
+    <string name="app_inventory_count">Apps shared: %1$d</string>
+    <string name="app_inventory_omitted">%1$d more apps were not shared because the list is limited to 500 apps.</string>
+    <string name="app_inventory_sent_at">Last sent: %1$s</string>
+    <string name="app_inventory_show">Show the list</string>
+    <string name="app_inventory_hide">Hide the list</string>
+    <string name="app_inventory_row_version">%1$s · version %2$s</string>
+    <string name="app_inventory_row_system">%1$s · system app</string>
+    <string name="app_inventory_row_system_version">%1$s · version %2$s · system app</string>
+    <string name="device_status_menu_header">More about this app</string>
+
+    <!-- Enrollment -->
+    <string name="enrollment_body">A parent or guardian creates a pairing code on the FamilySafe website (Add device). Sit together and type it in here. The code works once and expires after 10 minutes.</string>
+    <string name="enrollment_code_label">Pairing code</string>
+    <string name="enrollment_code_placeholder">XXXX-XXXX-XXXX-XXXX</string>
+    <string name="enrollment_name_label">Name of this device</string>
+    <string name="enrollment_name_hint">Your parent sees this name on the website. You can change it.</string>
+    <string name="enrollment_confirm_header">Before you connect</string>
+    <string name="enrollment_confirm_shared">Your parent will see this device\'s name and details: %1$s %2$s, Android %3$s, FamilySafe version %4$s. Nothing else is shared when you connect.</string>
+    <string name="enrollment_confirm_not_shared">Later features, like screen time or location, only start when they are turned on and you have allowed them in Android. Every feature is listed in this app. A parent can remove this device from the website at any time.</string>
+    <string name="enrollment_connect">Connect this device</string>
+    <string name="enrollment_error_format">The code should have 16 letters and numbers, like XXXX-XXXX-XXXX-XXXX. Check it and try again.</string>
+    <string name="enrollment_error_name">Please give this device a name.</string>
+    <string name="enrollment_error_invalid_code">That code did not work. It may have expired or already been used. Ask your parent or guardian to create a new one.</string>
+    <string name="enrollment_error_rate_limited">Too many tries. Wait a few minutes, then try again.</string>
+    <string name="enrollment_error_unreachable">Could not reach FamilySafe. Check your internet connection and try again.</string>
+    <string name="enrollment_error_uncertain">The connection was lost while connecting, so it is not clear whether it worked. Ask your parent or guardian to create a new code.</string>
+    <string name="enrollment_error_server">Something went wrong on our side. Try again in a moment.</string>
+    <string name="enrollment_error_rejected">This version of the app could not connect. Check for an update, or ask your parent or guardian for help.</string>
+    <string name="enrollment_error_storage_failed">The code was accepted, but this device could not save the connection safely.</string>
+    <string name="enrollment_error_storage_unavailable">This device could not open its secure storage. Restart the app or the phone and try again.</string>
+    <string name="enrollment_error_already">This device is already connected.</string>
+    <string name="enrollment_error_busy">Connecting is already in progress.</string>
+    <string name="enrollment_error_parent_revoke">If your parent sees this device on the website but it does not work here, they should remove it there and add it again with a new code.</string>
+    <string name="enrolled_title">Connected</string>
+    <string name="enrolled_body">This device is connected to a parent or guardian account. They can see this device\'s name and details. Nothing else is shared yet. When a feature starts, this app tells you first.</string>
+    <string name="enrolled_removal">To disconnect this device, ask your parent or guardian to remove it on the FamilySafe website.</string>
+
+    <!-- Disconnected (credentials rejected, expired or lost) -->
+    <string name="disconnected_title">Disconnected</string>
+    <string name="disconnected_body_revoked">This device is no longer connected to a parent or guardian account. It was removed on the website, or its connection was replaced. Nothing is being shared.</string>
+    <string name="disconnected_body_expired">This device was offline for too long, so its connection ran out. Nothing is being shared.</string>
+    <string name="disconnected_body_uncertain">The connection was lost while it was being renewed, so it is not clear whether it still works. To be safe, this device disconnected itself. Nothing is being shared.</string>
+    <string name="disconnected_next_step">To connect again, ask your parent or guardian to remove this device on the FamilySafe website and add it again with a new code.</string>
+
+    <!-- Permissions -->
+    <string name="permissions_intro">This list shows what Android currently lets FamilySafe use. FamilySafe has not asked for any of it yet. When a feature needs one, this app explains why first and Android asks you. You can say no.</string>
+    <string name="permissions_shared_not_connected">Nothing is shared with a parent because this device is not connected.</string>
+    <string name="permissions_shared_never">Not shared with your parent yet.</string>
+    <string name="permissions_shared_at">Last shared with your parent: %1$s</string>
+    <string name="permission_tag_shared">Your parent sees only whether this is on or off. About every 6 hours and when you open this app.</string>
+    <string name="permission_tag_local">Stays on this device. Your parent does not see this.</string>
+    <string name="permission_status_granted">Allowed</string>
+    <string name="permission_status_granted_help">Allowed in Android settings.</string>
+    <string name="permission_status_denied">Not allowed</string>
+    <string name="permission_status_denied_help">You said no. FamilySafe keeps working without it.</string>
+    <string name="permission_status_revoked">Turned off</string>
+    <string name="permission_status_revoked_help">It was allowed before and is now off. You can change this in Android settings.</string>
+    <string name="permission_status_restricted">Restricted</string>
+    <string name="permission_status_restricted_help">Android or a device rule limits this.</string>
+    <string name="permission_status_not_available">Not available</string>
+    <string name="permission_status_not_available_help">This device, or this version of FamilySafe, does not offer it.</string>
+    <string name="permission_precise_location_name">Exact location</string>
+    <string name="permission_precise_location_why">Exact instead of approximate location. Only used after location is turned on.</string>
+    <string name="permission_sms_name">Text messages</string>
+    <string name="permission_sms_why">Not used. FamilySafe does not read your messages.</string>
+    <string name="permission_call_log_name">Call history</string>
+    <string name="permission_call_log_why">Not used. FamilySafe does not read your call history.</string>
+    <string name="permission_status_not_requested">Not requested</string>
+    <string name="permission_status_not_requested_help">FamilySafe has not asked for this.</string>
+    <string name="permission_location_name">Location</string>
+    <string name="permission_location_why">Lets a parent see where the device is, only after you and your parent turn location on.</string>
+    <string name="permission_background_location_name">Location in the background</string>
+    <string name="permission_background_location_why">Needed only for location history and safe-place alerts, and only if those are turned on. Android asks separately.</string>
+    <string name="permission_camera_name">Camera</string>
+    <string name="permission_camera_why">Used to scan the pairing code, and for photos you choose to send. Android shows an indicator whenever the camera is in use.</string>
+    <string name="permission_microphone_name">Microphone</string>
+    <string name="permission_microphone_why">Only for voice messages or emergency calls that you start yourself. Android shows an indicator whenever it is in use.</string>
+    <string name="permission_usage_access_name">Screen time (usage access)</string>
+    <string name="permission_usage_access_why">Lets FamilySafe count time spent in apps so screen-time limits can work. You turn this on in Android settings.</string>
+    <string name="permission_app_list_name">Installed apps</string>
+    <string name="permission_app_list_why">Lets a parent see which apps are on this device so they can set limits per app.</string>
+    <string name="permission_contacts_name">Emergency contacts</string>
+    <string name="permission_contacts_why">You choose which contacts to share with the contact picker. FamilySafe cannot read your other contacts.</string>
+    <string name="permission_notifications_name">Notifications</string>
+    <string name="permission_notifications_why">Lets FamilySafe tell you about limits and changes on this device.</string>
+
+    <!-- Sync status -->
+    <string name="sync_status_body">Nothing has been synced because this device is not enrolled yet.</string>
+    <string name="sync_status_body_enrolled">This device is connected. About every 15 minutes, while it has a network connection, it tells your parent\'s dashboard that it is online.</string>
+    <string name="sync_status_what_is_sent">Each check-in contains only: the battery level, whether the device is charging, the kind of network it is on (for example Wi-Fi or mobile data), and the versions of this app and of Android. Nothing else is sent by this feature.</string>
+    <string name="sync_status_permissions_sent">About every 6 hours, and when you open this app, FamilySafe also tells your parent whether each permission on the Permissions screen is on or off. Nothing else is sent by this feature.</string>
+    <string name="sync_status_last_sync_at">Last sync: %1$s</string>
+    <string name="sync_status_last_sync">Last sync: never</string>
+
+    <!-- Safety -->
+    <string name="safety_intro">These are things FamilySafe will never do.</string>
+    <string name="safety_item_visible">It never hides its icon or its name, and it shows up in your app list.</string>
+    <string name="safety_item_no_messages">It does not read your messages, emails or chats, and it does not record your screen.</string>
+    <string name="safety_item_no_secret_audio">It never turns on the microphone or camera by itself.</string>
+    <string name="safety_item_removal">A parent removes a device from the website. If something feels wrong, talk to your parent or guardian, or another adult you trust.</string>
+
+    <!-- About -->
+    <string name="about_version">Version %1$s</string>
+    <string name="about_body">FamilySafe is a family safety app. It is built to be open about what it does: every feature is listed in this app, and Android asks before it is used.</string>
+    <string name="about_privacy">Location, app usage and similar data are only collected when a feature is turned on and you have granted the matching Android permission.</string>
+    <string name="usage_header">Screen time shared with your parent</string>
+    <string name="usage_intro">When you turn on Usage Access in Android settings, this device sends, about every 6 hours and when you open this app, how long the screen was on, how many times it was unlocked and how long each app was open today. Only the app\'s technical package name is sent. Nothing you type, see, say or send inside apps is included, and neither are websites, messages or photos.</string>
+    <string name="usage_not_sent">Not sent yet.</string>
+    <string name="usage_day">Day: %1$s</string>
+    <string name="usage_total_hm">Screen on: %1$d h %2$d min</string>
+    <string name="usage_total_m">Screen on: %1$d min</string>
+    <string name="usage_unlocks">Times unlocked: %1$d</string>
+    <string name="usage_apps_count">Apps with screen time: %1$d</string>
+    <string name="usage_top_header">Most used apps</string>
+    <string name="usage_app_row_hm">%1$s · %2$d h %3$d min · opened %4$d×</string>
+    <string name="usage_app_row_m">%1$s · %2$d min · opened %3$d×</string>
+    <string name="usage_omitted">%1$d more apps were not shared because a report holds at most 200 apps and one day.</string>
+    <string name="usage_sent_at">Last sent: %1$s</string>
+    <string name="usage_guide_header">Turn on Usage Access</string>
+    <string name="usage_guide_why">Screen-time features need Android\'s Usage Access. It lets FamilySafe see how long apps were open. It does not show what happens inside an app.</string>
+    <string name="usage_guide_steps">1. Tap the button below. 2. Choose FamilySafe in the list. 3. Turn on "Allow usage access". You can turn it off again at any time; FamilySafe stops reading usage as soon as you do.</string>
+    <string name="usage_guide_status_granted">Usage Access is on.</string>
+    <string name="usage_guide_status_off">Usage Access is off. No screen time is read or shared.</string>
+    <string name="usage_guide_status_unknown">Android did not say whether Usage Access is on.</string>
+    <string name="usage_guide_open">Open Android settings</string>
+    <string name="usage_guide_not_connected">Usage Access is only used once this device is connected to a parent or guardian account.</string>
+    <string name="rules_header">Rules from your parent</string>
+    <string name="rules_intro">This device asks the FamilySafe service for the rules your parent set, about every six hours and when you open the app. Receiving rules sends nothing about you; the request only says which version you already have.</string>
+    <string name="rules_none_yet">No rules received yet.</string>
+    <string name="rules_no_limit">No daily screen-time limit is set.</string>
+    <string name="rules_every_day">Daily limit, every day: %1$s</string>
+    <string name="rules_day_row">%1$s: %2$s</string>
+    <string name="rules_limit_none">no limit</string>
+    <string name="rules_minutes_hm">%1$d h %2$d min</string>
+    <string name="rules_minutes_m">%1$d min</string>
+    <string name="rules_bedtime">Bedtime window: %1$s to %2$s</string>
+    <string name="rules_school_mode">School mode is switched on.</string>
+    <string name="rules_applies_note">The daily limit is checked on this phone, only while this app is open. The app cannot lock the phone or close other apps. Bedtime and school mode are shown here but not applied yet. App rules are listed in the next section.</string>
+    <string name="rules_stale">These rules were last confirmed a while ago. The app could not confirm them with the service recently. They stay on this device until they expire.</string>
+    <string name="rules_expired">These rules were not confirmed for over a week and are no longer used. They will be used again once the app can reach the service.</string>
+    <string name="rules_checked_at">Last confirmed: %1$s</string>
+    <string name="limit_header">Today\'s screen time</string>
+    <string name="limit_checking">Checking today\'s limit…</string>
+    <string name="limit_used_of">Screen time today: %1$s of %2$s</string>
+    <string name="limit_remaining">%1$s left today</string>
+    <string name="limit_level_allow">You are within today\'s limit.</string>
+    <string name="limit_level_warn">You are close to today\'s limit.</string>
+    <string name="limit_level_limit">You have reached today\'s limit.</string>
+    <string name="limit_no_screen_time">Your parent set no screen time for today.</string>
+    <string name="limit_inactive_no_rules">No rules have been received, so no limit is checked.</string>
+    <string name="limit_inactive_expired">The rules are out of date, so no limit is checked until the app can reach the service.</string>
+    <string name="limit_inactive_no_limit_today">There is no screen-time limit for today.</string>
+    <string name="limit_inactive_no_usage_access">A limit is set for today, but Usage Access is off, so the app cannot measure your screen time. You can turn it on under Permissions.</string>
+    <string name="limit_inactive_cannot_read">Android did not give the app your screen-time numbers just now. It tries again soon.</string>
+    <string name="limit_check_note">This check happens on this phone while the app is open. The screen-time limit check sends nothing to your parent. Checks of app rules work differently: when a blocked app is opened, your parent is told which app and when.</string>
+    <string name="limit_reached_title">Daily limit reached</string>
+    <string name="limit_reached_body">Your parent set a limit of %1$s for today. Your screen time today: %2$s.</string>
+    <string name="limit_reached_body_none">Your parent set no screen time for today.</string>
+    <string name="limit_reached_cannot_lock">This app cannot lock the phone or close other apps. It tells you about the limit; what you do next is up to you and your family.</string>
+    <string name="limit_reached_dismiss">OK, I understand</string>
+    <string name="app_rules_header">App rules from your parent</string>
+    <string name="app_rules_intro">Your parent can block an app or give it a daily limit. This app checks which apps you opened today, using Usage Access, about once a minute while it is open and when you come back to it.</string>
+    <string name="app_rules_checking">Checking app rules…</string>
+    <string name="app_rules_inactive_no_rules">No rules have been received, so no app is checked.</string>
+    <string name="app_rules_inactive_expired">The rules are out of date, so no app is checked until the app can reach the service.</string>
+    <string name="app_rules_inactive_none">Your parent has not restricted any app.</string>
+    <string name="app_rules_inactive_no_usage_access">Your parent restricted at least one app, but Usage Access is off, so this app cannot see which apps you open. You can turn it on under Permissions.</string>
+    <string name="app_rules_inactive_cannot_read">Android did not give the app your app-usage numbers just now. It tries again soon.</string>
+    <string name="app_rules_row_blocked">%1$s: blocked by your parent</string>
+    <string name="app_rules_row_limit">%1$s: limit %2$s a day, used today: %3$s</string>
+    <string name="app_rules_level_allow">Within the limit.</string>
+    <string name="app_rules_level_warn">Close to the limit.</string>
+    <string name="app_rules_level_limit">The limit is reached.</string>
+    <string name="app_rules_level_blocked">This app is blocked.</string>
+    <string name="app_rules_note">This app cannot close other apps or lock the phone. It notices when you open a blocked app or reach an app limit and tells you here. When a blocked app is opened, your parent is told which app and when. Nothing else about your app use is sent for this.</string>
+    <string name="app_rule_notice_title_blocked">App blocked</string>
+    <string name="app_rule_notice_title_limit">App limit reached</string>
+    <string name="app_rule_notice_body_blocked">Your parent blocked %1$s.</string>
+    <string name="app_rule_notice_body_none">Your parent set no time for %1$s today.</string>
+    <string name="app_rule_notice_body_limit">Your parent set a limit of %2$s a day for %1$s. Used today: %3$s.</string>
+    <string name="app_rule_notice_reported">Your parent is told which blocked app was opened and when.</string>
+    <string name="app_rule_notice_cannot_close">This app cannot close %1$s or lock the phone. It tells you about the rule; what you do next is up to you and your family.</string>
+    <string name="app_rule_notice_dismiss">OK, I understand</string>
+</resources>

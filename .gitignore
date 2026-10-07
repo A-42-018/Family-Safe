@@ -1,0 +1,23 @@
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+!.env.local.example
+*.log
+.DS_Store
+.idea/
+.vscode/
+# Android
+apps/android/.gradle/
+apps/android/**/build/
+apps/android/local.properties
+apps/android/**/google-services.json
+*.jks
+*.keystore
+# Supabase
+supabase/.branches/
+supabase/.temp/

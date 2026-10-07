@@ -1,0 +1,62 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node scripts/check-structure.mjs
+      - run: node scripts/check-no-secrets-in-web.mjs
+  functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with: { deno-version: v2.x }
+      - run: deno check --no-config --import-map=deno.json health/index.ts auth-events/index.ts enrollment-create/index.ts enrollment-redeem/index.ts device-revoke/index.ts device-refresh/index.ts device-heartbeat/index.ts device-info/index.ts device-permissions/index.ts device-apps/index.ts device-usage/index.ts device-config/index.ts device-app-events/index.ts
+        working-directory: supabase/functions
+      - run: deno test --no-config --import-map=deno.json --allow-env _shared/ health/ auth-events/ enrollment-create/ enrollment-redeem/ device-revoke/ device-refresh/ device-heartbeat/ device-info/ device-permissions/ device-apps/
+        working-directory: supabase/functions
+  web:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:contracts
+      - run: npm run test:web
+      - run: npm run check:secrets
+      - run: npm run build:web
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql postgresql-contrib postgresql-16-pgtap libtap-parser-sourcehandler-pgtap-perl
+          sudo service postgresql start
+          sudo -u postgres psql -c "create role runner superuser login"
+      - run: scripts/db/verify.sh
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew --no-daemon testDebugUnitTest ktlintCheck lintDebug assembleDebug verifyDebugManifestPermissions

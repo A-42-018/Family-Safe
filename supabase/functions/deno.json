@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "zod": "npm:zod@3.23.8",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.45.4"
+  },
+  "compilerOptions": {
+    "strict": true
+  },
+  "tasks": {
+    "test": "deno test --no-config --import-map=deno.json --allow-env _shared/ health/ auth-events/ enrollment-create/ enrollment-redeem/ device-revoke/ device-refresh/ device-heartbeat/ device-info/ device-permissions/ device-apps/ device-usage/ device-config/ device-app-events/"
+  }
+}
