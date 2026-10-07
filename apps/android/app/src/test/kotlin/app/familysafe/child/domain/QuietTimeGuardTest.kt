@@ -35,7 +35,9 @@ class QuietTimeGuardTest {
 
     @Test
     fun `the manifest has no receiver, service or alarm permission for schedules`() {
-        assertFalse(manifest.contains("<receiver"))
+        // Track B (T2): the one device-admin receiver is allowed, and only with the system-only permission.
+        assertEquals(1, Regex("<receiver").findAll(manifest).count())
+        assertTrue(manifest.contains("android.permission.BIND_DEVICE_ADMIN"))
         assertFalse(manifest.contains("<service"))
         assertFalse(manifest.contains("EXACT_ALARM"))
         assertFalse(manifest.contains("POST_NOTIFICATIONS"))

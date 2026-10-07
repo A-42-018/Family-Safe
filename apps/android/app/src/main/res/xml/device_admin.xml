@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- No device-admin policy is requested through this old mechanism. Managed mode only works when the device owner
+     was provisioned (adb / QR); this file only makes the receiver a valid device-admin component. -->
+<device-admin>
+    <uses-policies />
+</device-admin>

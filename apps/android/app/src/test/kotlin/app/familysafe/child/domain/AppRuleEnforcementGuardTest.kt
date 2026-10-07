@@ -44,7 +44,9 @@ class AppRuleEnforcementGuardTest {
             RepoFiles.declaredPermissions(manifest),
         )
         assertFalse(manifest.contains("<service"))
-        assertFalse(manifest.contains("<receiver"))
+        // Track B (T2) added exactly one receiver: the device-admin component, bindable only by the system.
+        assertEquals(1, Regex("<receiver").findAll(manifest).count())
+        assertTrue(manifest.contains("android:permission=\"android.permission.BIND_DEVICE_ADMIN\""))
         assertFalse(manifest.contains("android.permission.QUERY_ALL_PACKAGES"))
     }
 

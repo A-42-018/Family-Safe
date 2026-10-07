@@ -48,7 +48,22 @@
         android:theme="@style/Theme.FamilySafe"
         android:usesCleartextTraffic="false">
 
-        <!-- The only exported component: a normal, visible launcher entry. No disguise, no hidden entry point. -->
+        <!-- Track B (managed mode, see docs/ANDROID_PERMISSIONS.md "Track B decision"): the device-admin component
+             Android binds when the family provisions this app as Device Owner. Exported only so the SYSTEM can
+             bind it; the permission below can be held by nothing else. Not a permission request, no service. -->
+        <receiver
+            android:name=".admin.FamilySafeAdminReceiver"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- The only exported UI component: a normal, visible launcher entry. No disguise, no hidden entry point. -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
