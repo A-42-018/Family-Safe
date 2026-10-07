@@ -1,7 +1,9 @@
 // Read side for the notifications page, the shell badge and the dashboard (Server Components), run as the signed-in
 // parent under RLS (SELECT only). Errors are generic (no database text).
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { NOTIFICATION_TYPES, type NotificationType } from "@familysafe/contracts";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { asPreference, PREFERENCE_COLUMNS } from "./preferences";
 import { asNotificationRow, NOTIFICATION_COLUMNS, NOTIFICATIONS_MAX_LIMIT, type NotificationRow } from "./notifications";
 
 export interface NotificationsPage {
@@ -41,4 +43,20 @@ export async function loadUnreadCount(): Promise<number | null> {
   } catch {
     return null;
   }
+}
+
+/** The parent's stored preferences (only types they changed). Unusable rows are skipped. */
+export async function fetchPreferences(supabase: SupabaseClient): Promise<Map<NotificationType, boolean>> {
+  const { data, error } = await supabase.from("notification_preferences").select(PREFERENCE_COLUMNS).limit(NOTIFICATION_TYPES.length);
+  if (error) throw new Error("notification_preferences_lookup_failed");
+  const out = new Map<NotificationType, boolean>();
+  for (const raw of (data ?? []) as unknown[]) {
+    const p = asPreference(raw);
+    if (p) out.set(p[0], p[1]);
+  }
+  return out;
+}
+
+export async function loadPreferences(): Promise<Map<NotificationType, boolean>> {
+  return fetchPreferences(await createSupabaseServerClient());
 }

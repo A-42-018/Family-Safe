@@ -693,3 +693,20 @@ describe("Phase 29b notifications page", () => {
     expect(src("lib/notifications/queries.ts")).toMatch(/catch \{\s*return null;/);
   });
 });
+
+describe("Phase 29c notification preferences", () => {
+  const src = (p: string) => read(`${root}${p}`);
+  it("settings renders the card and never shows an unreadable choice as 'on'", () => {
+    const page = src("app/(app)/settings/page.tsx");
+    expect(page).toContain("<PreferencesCard");
+    expect(page).toContain("loadPreferences()");
+    expect(page).toMatch(/\.catch\(\(\) => null\)/);
+    expect(src("components/notifications/preferences-card.tsx")).toContain('data-testid="preferences-unreadable"');
+  });
+  it("the card is plain forms with fixed values; always-on rows have no control", () => {
+    const card = src("components/notifications/preferences-card.tsx");
+    expect(card).not.toMatch(/"use client"|onClick|dangerouslySetInnerHTML|supabase/i);
+    expect(card).toContain("r.alwaysOn ? (");
+    expect(src("lib/notifications/service.ts")).toContain('rpc("parent_set_notification_preference"');
+  });
+});

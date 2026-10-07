@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isUuid } from "@/lib/ids";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { markRead } from "./service";
+import { markRead, setPreference } from "./service";
 
 async function run(ids: string[] | null): Promise<void> {
   const r = await markRead({ supabase: await createSupabaseServerClient() }, ids);
@@ -22,4 +22,14 @@ export async function markReadAction(fd: FormData): Promise<void> {
   const id = fd.get("id");
   if (typeof id !== "string" || !isUuid(id)) return;
   await run([id]);
+}
+
+/** One form per row: hidden `type` and the wanted `enabled` ("true" | "false"). Anything else is ignored. */
+export async function setPreferenceAction(fd: FormData): Promise<void> {
+  const type = fd.get("type");
+  const enabled = fd.get("enabled");
+  if (typeof type !== "string" || (enabled !== "true" && enabled !== "false")) return;
+  const r = await setPreference({ supabase: await createSupabaseServerClient() }, { type, enabled: enabled === "true" });
+  if (!r.ok && r.redirectTo) redirect(r.redirectTo); // throws; stays outside try/catch
+  revalidatePath("/settings");
 }

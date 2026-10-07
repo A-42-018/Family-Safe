@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fetchNotifications, fetchUnreadCount } from "./queries";
+import { fetchNotifications, fetchPreferences, fetchUnreadCount } from "./queries";
 
 type Call = { table: string; select: string; opts?: unknown; is?: [string, unknown]; limit?: number; order: string[] };
 function client(result: { data?: unknown; error?: unknown; count?: unknown }) {
@@ -52,5 +52,17 @@ describe("fetchUnreadCount", () => {
   it("fails generically when the count is missing or the query fails", async () => {
     await expect(fetchUnreadCount(client({ count: null }).supabase)).rejects.toThrow("notifications_count_failed");
     await expect(fetchUnreadCount(client({ error: { message: "x" }, count: 3 }).supabase)).rejects.toThrow("notifications_count_failed");
+  });
+});
+
+describe("fetchPreferences", () => {
+  it("reads type and enabled only, keeps the usable rows", async () => {
+    const { supabase, calls } = client({ data: [{ type: "BATTERY_LOW", enabled: false }, { type: "NOPE", enabled: true }, { type: "EMERGENCY", enabled: "x" }, null] });
+    const m = await fetchPreferences(supabase);
+    expect([...m]).toEqual([["BATTERY_LOW", false]]);
+    expect(calls[0]).toMatchObject({ table: "notification_preferences", select: "type,enabled", limit: 10 });
+  });
+  it("errors are generic", async () => {
+    await expect(fetchPreferences(client({ error: { message: "secret" } }).supabase)).rejects.toThrow("notification_preferences_lookup_failed");
   });
 });

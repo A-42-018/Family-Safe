@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { PreferencesCard } from "@/components/notifications/preferences-card";
 import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { preferenceRows } from "@/lib/notifications/preferences";
+import { loadPreferences } from "@/lib/notifications/queries";
 import { parseTheme, THEME_COOKIE, THEMES } from "@/lib/theme";
 import { setThemeAction } from "@/lib/theme-actions";
 import { cn } from "@/lib/utils";
@@ -14,6 +17,8 @@ const LABELS = { system: "System", light: "Light", dark: "Dark" } as const;
 
 export default async function SettingsPage() {
   const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+  const stored = await loadPreferences().catch(() => null); // unreadable is shown as such, never as "on"
+  const preferences = stored === null ? null : preferenceRows(stored);
   return (
     <>
       <PageHeader title="Settings" description="Your account and how the dashboard looks." />
@@ -27,6 +32,7 @@ export default async function SettingsPage() {
             <Button asChild variant="outline"><Link href="/settings/security">Manage security</Link></Button>
           </CardContent>
         </Card>
+        <PreferencesCard rows={preferences} />
         <Card>
           <CardHeader>
             <CardTitle as="h2" className="text-lg">Appearance</CardTitle>
