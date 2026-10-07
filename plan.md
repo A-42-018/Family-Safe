@@ -80,7 +80,7 @@ Each milestone is a vertical, demoable slice. Sub-phase IDs and briefs are uncha
 ### M1 — Screen-time core complete + real enforcement option (≈ 8 sessions)
 | ID | Layer | Scope | Size | Status |
 |---|---|---|---|---|
-| 19c-1 | A-DOM | `ScheduleConfig` + pure evaluator + DST/zone tests | M | ☐ |
+| 19c-1 | A-DOM | `ScheduleConfig` + pure evaluator + DST/zone tests | M | ☑ 2026-10-07 (+24 tests) |
 | 19c-2 | A-DATA | DTO `timezone`/`schedules`; codec v3; drop drift exclusion | M | ☐ |
 | 19c-3 | A-UI | triggers, WorkManager re-eval, quiet-time state, copy | M | ☐ |
 | 19d-1+2 | SQL+EDGE / WEB | **merged** drop legacy columns + remove web legacy display | S+S | ☐ |
@@ -139,6 +139,7 @@ Map provider suggestion for 21c-2 (confirm with research): MapLibre GL / Leaflet
 6. In-memory limiters are per Edge isolate → effectively off in production until 31a.
 
 ## Phase log (latest)
+- **19c-1 (2026-10-07)** — `domain/Schedules.kt`: `ScheduleWindow.validated` (mirrors `scheduleSchema`), `ScheduleList.validated` (≤ 20, unique ids, same-type overlap via week ranges), `ScheduleEvaluator.evaluate(windows, zone, instant)` → `ScheduleState(active, nextBoundary)`, `zoneFor(timezone, deviceZone)`. Binding decisions: windows are read as wall-clock times and converted per occurrence (DST gap start moves forward, a window that vanishes in the gap is skipped that day, an ambiguous time takes the earlier offset); active windows carry `startDate` (for 19c-3 "dismiss per window+day"); an unknown/malformed `timezone` falls back to the device zone; BEDTIME/SCHOOL/CUSTOM order is the display order. 726 JVM tests, ktlint, lint, manifest guard green locally.
 - **H2a–c (2026-10-07)** — Kotlin compiled unchanged. Fixed test-side defects only: colon in a backticked test name (`AppAttemptHttpMapperTest`), stray `)` (`HeartbeatRunnerTest:40`), `AppAttemptContractDriftTest.serialNames` assumed multi-line DTOs, `AppInventoryContractDriftTest` regex missed `trimmedText(` keys and had 4× backslashes in a raw string, `DeviceConfigContractDriftTest` counted nullables across `AppRuleDto` too (now scoped to `DeviceConfigDataDto`), `DeviceConfigRunnerTest` fixture lacked `app_rules`; reworded a doc comment containing "label" that a guard test bans; ktlintFormat + trailing-comment moves in `build.gradle.kts` and tests. No guard or drift assertion was weakened. CI mirror: all jobs.
 - **M0-1 (2026-10-07)** — repo on GitHub (`A-42-018/Family-Safe`, `main`): baseline commit of 19b + plan v2, then CI `deno test` step now covers all 13 functions (was missing `device-usage`, `device-config`, `device-app-events`) and the unused `eslint-disable` in `lib/schedules/schedules.ts` removed (lint 0 warnings). Status ◐ until the first CI run's database + android jobs are read.
 - **Plan v2 (2026-10-07)** — ran the web/contracts/Deno toolchains for real (all green, numbers above); H1b ☑, H1a ◐ (pgTAP left). Roadmap regrouped into milestones M0–M8 with demo gates and an MVP cut line; Track B (Device Owner) T1–T4 added; 20c-1, 30a/b, 29a–d, 32a moved earlier; 8 S-sized pairs merged; 33a pulled into M0-2; git + CI made the verification source of truth. No source code changed.
