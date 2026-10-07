@@ -9,3 +9,4 @@ export * from "./device-apps";
 export * from "./device-usage";
 export * from "./device-config";
 export * from "./device-app-events";
+export * from "./notifications";
