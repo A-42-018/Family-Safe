@@ -21,8 +21,9 @@ insert into public.location_points (device_id,latitude,longitude,accuracy_meters
 insert into public.device_commands (device_id,command_type,status,expires_at,created_at) values
   ('d0000000-0000-4000-8000-0000000000a2','SYNC_CONFIG','EXPIRED',now() - interval '31 days' + interval '1 hour',now() - interval '31 days'),
   ('d0000000-0000-4000-8000-0000000000a2','SYNC_CONFIG','PENDING',now() + interval '1 hour',now());
+insert into public.device_credentials (device_id,refresh_token_hash,issued_at,expires_at,rotated_at) values
+  ('d0000000-0000-4000-8000-0000000000a2',decode(repeat('aa',32),'hex'),now() - interval '60 days',now() - interval '31 days',now() - interval '45 days');
 insert into public.device_credentials (device_id,refresh_token_hash,issued_at,expires_at) values
-  ('d0000000-0000-4000-8000-0000000000a2',decode(repeat('aa',32),'hex'),now() - interval '60 days',now() - interval '31 days'),
   ('d0000000-0000-4000-8000-0000000000a2',decode(repeat('bb',32),'hex'),now() - interval '1 day',now() + interval '10 days');
 insert into public.pairing_tokens (child_id,created_by,token_hash,expires_at,created_at) values
   ('c0000000-0000-4000-8000-00000000000a','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',decode(repeat('cc',32),'hex'),now() - interval '8 days',now() - interval '8 days 30 minutes'),
